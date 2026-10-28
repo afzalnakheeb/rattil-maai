@@ -1,5 +1,7 @@
 # Recite With Me · رتّل معي
 
+Live at **https://rattilmai.com**
+
 A Quran memorization web app to the standard of Masjid al-Haram and Masjid an-Nabawi (Hafs 'an 'Asim, Madinah Mushaf).
 
 ## What works today
