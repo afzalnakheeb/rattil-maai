@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Recite With Me">
+  <rect width="512" height="512" rx="112" fill="#2A7458"/>
+  <g transform="translate(256 256) scale(0.84) translate(-256 -207.5)">
+    <path d="M114 338V240A227.2 227.2 0 0 1 256 29.4A227.2 227.2 0 0 1 398 240V338H206L160 386V338Z" fill="none" stroke="#C9A85F" stroke-width="32" stroke-linejoin="round"/>
+    <g fill="#F6F3EC">
+      <rect x="198" y="222" width="30" height="80" rx="15"/>
+      <rect x="241" y="196" width="30" height="132" rx="15"/>
+      <rect x="284" y="222" width="30" height="80" rx="15"/>
+    </g>
+  </g>
+</svg>

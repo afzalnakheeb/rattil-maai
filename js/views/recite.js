@@ -3,7 +3,7 @@ import { renderWords } from './words.js';
 import { speechSupported } from '../speech.js';
 import * as store from '../store.js';
 import * as plan from '../plan.js';
-import { TOTAL_PAGES } from '../quran.js';
+import { TOTAL_PAGES, audioUrl, wordAudioUrl } from '../quran.js';
 import { esc, loading, errorBox, toast, todayKey, fmtTime } from '../ui.js';
 import { icons } from '../icons.js';
 
@@ -36,7 +36,10 @@ export default async function reciteView(root, params) {
     onUpdate: () => paint(),
     onInterim: (t) => { const el = root.querySelector('#live'); if (el) el.textContent = t; },
     onNotice: (m) => toast(m),
+    onMistake: (m) => showFix(m),
   });
+  let fixAudio = null;
+  let fixMark = null;
   try {
     await session.load();
   } catch {
@@ -68,6 +71,7 @@ export default async function reciteView(root, params) {
       </div>
       <div id="result"></div>
       <div class="dock" id="dock">
+        <div class="fix" id="fix" hidden></div>
         <div class="live-text" id="live" lang="ar"></div>
         <div class="row" style="gap:24px">
           <button class="btn gold sm" id="peek" type="button">Peek</button>
@@ -76,7 +80,7 @@ export default async function reciteView(root, params) {
         </div>
         <div class="xs muted" id="status">Tap the microphone and recite from memory.</div>
       </div>
-      <p class="xs muted" style="text-align:center">The AI check is practice only and checks words, not tajweed yet. Your teacher confirms every portion.</p>
+      <p class="xs muted" style="text-align:center">When the AI catches a mistake, tap play to hear the correct recitation with tajweed. The AI checks words, not tajweed yet; your teacher confirms every portion.</p>
     </div>`;
 
   const wordsCard = root.querySelector('#wordsCard');
@@ -106,20 +110,63 @@ export default async function reciteView(root, params) {
 
   mic.addEventListener('click', async () => {
     if (finished) return;
+    stopFix(false);
     if (session.running) {
-      session.running = false;
-      session.listener && session.listener.stop();
-      session.recorder.mr && session.recorder.mr.state === 'recording' && session.recorder.mr.pause();
-      paint();
+      session.pause();
     } else if (session.started) {
-      session.running = true;
-      session.recorder.mr && session.recorder.mr.state === 'paused' && session.recorder.mr.resume();
-      session.listener && session.listener.start();
-      paint();
+      session.resume();
     } else {
       await session.start();
     }
   });
+
+  function showFix(m) {
+    const box = root.querySelector('#fix');
+    if (!box || finished) return;
+    fixMark = m;
+    const w = session.words[m.index];
+    box.hidden = false;
+    box.innerHTML = `
+      <div class="spread"><span class="chip red">${esc(MARK_LABEL[m.type] || 'Mistake')} · ayah ${w.ayah}</span>
+        <button class="icon-btn" id="fixClose" type="button" aria-label="Close correction" style="width:34px;height:34px">×</button></div>
+      <div class="row" style="gap:12px;justify-content:center">
+        <span class="quran" style="font-size:28px" lang="ar">${esc(w.display)}</span>
+      </div>
+      <div class="row" style="gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn sm" type="button" data-fix="ayah">${icons.play} Hear the ayah</button>
+        <button class="btn outline sm" type="button" data-fix="word">${icons.play} Hear the word</button>
+      </div>
+      <div class="xs muted" style="text-align:center">Listening pauses while it plays, then continues.</div>`;
+    box.querySelector('#fixClose').addEventListener('click', () => { stopFix(false); box.hidden = true; });
+    box.querySelectorAll('[data-fix]').forEach((b) => b.addEventListener('click', () => playFix(b.dataset.fix, m, b)));
+    if (navigator.vibrate) navigator.vibrate(40);
+  }
+
+  function stopFix(resume) {
+    if (fixAudio) { fixAudio.onended = null; fixAudio.onerror = null; fixAudio.pause(); fixAudio = null; }
+    root.querySelectorAll('[data-fix]').forEach((b) => b.classList.remove('playing'));
+    if (resume && !finished) session.resume();
+  }
+
+  function playFix(kind, m, btn) {
+    stopFix(false);
+    const w = session.words[m.index];
+    const wasRunning = session.pause();
+    const url = kind === 'word' ? wordAudioUrl(w.surah, w.ayah, w.pos) : audioUrl(store.get().settings.reciter, w.number);
+    fixAudio = new Audio(url);
+    if (btn) btn.classList.add('playing');
+    const done = () => {
+      stopFix(wasRunning);
+      if (wasRunning) toast('Listening again. Continue where you stopped.');
+    };
+    fixAudio.onended = done;
+    fixAudio.onerror = () => {
+      if (kind === 'word') { toast('Word audio unavailable. Playing the ayah.'); playFix('ayah', m, btn); return; }
+      toast('Audio could not load. Check your connection.');
+      done();
+    };
+    fixAudio.play().catch(() => done());
+  }
 
   root.querySelector('#peek').addEventListener('click', () => {
     const i = session.peek();
@@ -141,6 +188,7 @@ export default async function reciteView(root, params) {
   async function finish() {
     if (finished) return;
     finished = true;
+    stopFix(false);
     const blob = await session.stop();
     const st = store.get();
     const saved = await session.save({ kind: 'practice', student: st.profile?.name, planItem: pick.planItem, blob });
@@ -174,9 +222,10 @@ export default async function reciteView(root, params) {
         </div>
         ${planMsg ? `<p class="small">${esc(planMsg)}</p>` : ''}
         ${marks.length ? `<div class="stack-s">${marks.map((m) => `
-          <div class="row"><span class="quran" style="font-size:21px" lang="ar">${esc(m.word)}</span>
+          <div class="row"><button class="icon-btn" type="button" data-play="${m.index}" aria-label="Hear the correct recitation of ayah ${m.ayah}">${icons.play}</button>
+          <span class="quran" style="font-size:21px" lang="ar">${esc(m.word)}</span>
           <span class="grow small">${esc(MARK_LABEL[m.type] || m.type)} · ayah ${m.ayah}${m.heard ? ` · heard «${esc(m.heard)}»` : ''}</span>
-          <span class="xs muted">${fmtTime(m.t)}</span></div>`).join('')}</div>` : '<p class="small muted">No mistakes found. MashaAllah.</p>'}
+          <span class="xs muted">${fmtTime(m.t)}</span></div>`).join('')}<p class="xs muted">Tap play to hear each ayah recited correctly.</p></div>` : '<p class="small muted">No mistakes found. MashaAllah.</p>'}
         <div class="row-wrap">
           <a class="btn" href="#/recite?${new URLSearchParams(params).toString()}" id="again">Recite again</a>
           <a class="btn outline" href="#/history/${saved.id}">Replay recording</a>
@@ -184,12 +233,16 @@ export default async function reciteView(root, params) {
         </div>
       </div>`;
     root.querySelector('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    root.querySelector('#again').addEventListener('click', (e) => { e.preventDefault(); reciteView(root, params); });
+    root.querySelector('#again').addEventListener('click', (e) => { e.preventDefault(); stopFix(false); reciteView(root, params); });
+    root.querySelectorAll('[data-play]').forEach((b) => b.addEventListener('click', () => {
+      const m = marks.find((x) => x.index === +b.dataset.play);
+      if (m) playFix('ayah', m, b);
+    }));
     paint();
   }
 
   paint();
-  return () => { if (!finished && session.running) session.stop(); };
+  return () => { stopFix(false); if (!finished && session.running) session.stop(); };
 }
 
 function chooser(root) {

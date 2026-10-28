@@ -1,12 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Recite With Me">
   <rect width="512" height="512" rx="112" fill="#2A7458"/>
-  <path d="M146 404V248c0-61 49-110 110-110s110 49 110 110v156" fill="none" stroke="#C9A85F" stroke-width="22" stroke-linecap="round"/>
-  <g fill="#C9A85F">
-    <rect x="216" y="226" width="16" height="44" rx="8"/>
-    <rect x="248" y="206" width="16" height="84" rx="8"/>
-    <rect x="280" y="226" width="16" height="44" rx="8"/>
+  <g transform="translate(256 256) scale(0.82) translate(-256 -207.5)">
+    <path d="M114 338V240A227.2 227.2 0 0 1 256 29.4A227.2 227.2 0 0 1 398 240V338H206L160 386V338Z" fill="none" stroke="#C9A85F" stroke-width="22" stroke-linejoin="round"/>
+    <g fill="#F6F3EC">
+      <rect x="168" y="244" width="24" height="36" rx="12"/>
+      <rect x="206" y="225" width="24" height="74" rx="12"/>
+      <rect x="244" y="204" width="24" height="116" rx="12"/>
+      <rect x="282" y="225" width="24" height="74" rx="12"/>
+      <rect x="320" y="244" width="24" height="36" rx="12"/>
+    </g>
   </g>
-  <path d="M256 330c-26-18-58-24-90-18v66c32-6 64 0 90 18z" fill="#F6F3EC"/>
-  <path d="M256 330c26-18 58-24 90-18v66c-32-6-64 0-90 18z" fill="#F6F3EC"/>
-  <path d="M256 330v66" stroke="#2A7458" stroke-width="6" stroke-linecap="round"/>
 </svg>

@@ -74,6 +74,7 @@ const SPEECH_MOCK = `
 `;
 
 const errors = [];
+const window_word_requests = [];
 const results = [];
 const check = (name, ok, extra = '') => { results.push({ name, ok, extra }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  · ' + extra : ''}`); };
 
@@ -92,6 +93,7 @@ async function newPage(viewport) {
     route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ code: 200, status: 'OK', data }) });
   });
   await ctx.route('https://cdn.islamic.network/**', (route) => route.fulfill({ status: 200, contentType: 'audio/wav', body: wav() }));
+  await ctx.route('https://audio.qurancdn.com/**', (route) => { window_word_requests.push(route.request().url()); route.fulfill({ status: 200, contentType: 'audio/wav', body: wav() }); });
   await ctx.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   const page = await ctx.newPage();
   page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); });
@@ -158,6 +160,17 @@ try {
   await page.waitForTimeout(100);
   const bad1 = await page.locator('.w.bad').count();
   check('A skipped word is marked', bad1 === 1, `${bad1} marked`);
+  const fixVisible = await page.isVisible('#fix');
+  check('A correction card appears straight away', fixVisible);
+  await page.click('[data-fix="ayah"]');
+  await page.waitForTimeout(100);
+  const pausedWhilePlaying = await page.evaluate(() => !window.__rec._on);
+  check('Listening pauses while the correction plays', pausedWhilePlaying);
+  await page.waitForFunction(() => window.__rec && window.__rec._on, null, { timeout: 4000 }).catch(() => {});
+  check('Listening resumes after the correction', await page.evaluate(() => !!(window.__rec && window.__rec._on)));
+  await page.click('[data-fix="word"]');
+  await page.waitForFunction(() => window.__rec && window.__rec._on, null, { timeout: 4000 }).catch(() => {});
+  check('Word audio requested for the right word', window_word_requests.some((u) => /112_003_003\.mp3$/.test(u)), window_word_requests.slice(-1)[0] || 'none');
   await shot(page, '04-recite-live');
   // wrong word: "ولم يكن له كفوا واحد" (احد -> واحد is close; use clearly wrong "كبير")
   await page.evaluate(() => window.__say('ولم يكن له كفوا كبير'));
@@ -166,6 +179,7 @@ try {
   const resultText = await page.textContent('#result');
   check('Finishing shows a result with the score', /% correct/.test(resultText), resultText.replace(/\s+/g, ' ').slice(0, 70));
   check('Result lists the skipped and wrong words', /Skipped word/.test(resultText) && /Wrong word/.test(resultText));
+  check('Each mistake in the result has a play button', (await page.locator('#result [data-play]').count()) >= 3);
   await shot(page, '05-recite-result');
 
   // Plan should NOT advance (score < 90)

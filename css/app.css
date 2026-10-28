@@ -211,6 +211,9 @@ button.w { cursor: pointer; }
 .dock { position: sticky; bottom: calc(var(--tabbar-h) + 10px); z-index: 5; background: #fff; border-radius: 26px; padding: 14px 16px; box-shadow: 0 6px 24px rgba(30, 43, 38, 0.08); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .live-text { min-height: 22px; font-family: var(--ar); color: var(--muted); font-size: 15px; text-align: center; direction: rtl; }
 
+.fix { width: 100%; padding: 12px; border-radius: 16px; background: var(--red-tint); border: 1px solid #EDC7BC; display: flex; flex-direction: column; gap: 8px; }
+.fix .btn.playing, [data-play].playing { background: var(--gold); color: #fff; border-color: var(--gold); }
+
 /* Adhkar */
 .dhikr-text { font-family: var(--quran); font-size: 22px; line-height: 2.1; text-align: center; direction: rtl; }
 .dhikr-text.plain { font-family: var(--ar); font-size: 20px; line-height: 1.9; font-weight: 500; }

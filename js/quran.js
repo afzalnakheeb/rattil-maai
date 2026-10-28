@@ -28,6 +28,12 @@ export function audioUrl(reciterId, ayahNumber) {
   return `https://cdn.islamic.network/quran/audio/${r.kbps}/${r.id}/${ayahNumber}.mp3`;
 }
 
+// Single word, from the Quran.com word-by-word audio (public CDN).
+export function wordAudioUrl(surah, ayah, pos) {
+  const p = (n) => String(n).padStart(3, '0');
+  return `https://audio.qurancdn.com/wbw/${p(surah)}_${p(ayah)}_${p(pos)}.mp3`;
+}
+
 const mem = new Map();
 
 async function getJSON(path) {

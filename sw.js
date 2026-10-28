@@ -1,7 +1,7 @@
 // Offline support: the app shell is cached; Quran text is cached as it is read.
-const VERSION = 'rwm-v1';
+const VERSION = 'rwm-v2';
 const SHELL = [
-  './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png',
+  './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-small.svg', 'icons/icon-192.png',
   'js/app.js', 'js/store.js', 'js/ui.js', 'js/icons.js', 'js/arabic.js', 'js/quran.js', 'js/plan.js', 'js/adhkar.js',
   'js/speech.js', 'js/player.js', 'js/session.js',
   'js/views/today.js', 'js/views/mushaf.js', 'js/views/recite.js', 'js/views/adhkar.js', 'js/views/history.js',

@@ -17,7 +17,8 @@ export const MARK_LABEL = {
 };
 
 export class RecitationSession {
-  constructor({ portions, mode = 'practice', onUpdate = () => {}, onInterim = () => {}, onNotice = () => {} }) {
+  constructor({ portions, mode = 'practice', onUpdate = () => {}, onInterim = () => {}, onNotice = () => {}, onMistake = () => {} }) {
+    this.onMistake = onMistake;
     this.portions = portions;
     this.mode = mode;
     this.onUpdate = onUpdate;
@@ -43,9 +44,9 @@ export class RecitationSession {
     for (const a of ayahs) {
       if (a.ayah === 1 && a.basmala) items.push({ kind: 'basmala', text: a.basmala, surah: a.surahName });
       if (a.ayah === 1) items.push({ kind: 'surah', text: a.surahName });
-      a.words.forEach((w) => {
+      a.words.forEach((w, pos) => {
         items.push({ kind: 'word', index: words.length });
-        words.push({ ...w, surah: a.surah, ayah: a.ayah, surahEnglish: a.surahEnglish });
+        words.push({ ...w, surah: a.surah, ayah: a.ayah, surahEnglish: a.surahEnglish, number: a.number, pos: pos + 1 });
       });
       items.push({ kind: 'end', ayah: a.ayah });
     }
@@ -89,13 +90,35 @@ export class RecitationSession {
 
   _aiMark({ index, type, heard }) {
     const w = this.words[index];
-    this.marks.push({
+    const mark = {
       id: uid(), index, type, heard,
       word: w.display, surah: w.surah, ayah: w.ayah,
       source: 'ai',
       status: this.mode === 'teacher' ? 'suggested' : 'final',
       t: this.elapsed(),
-    });
+    };
+    this.marks.push(mark);
+    if (type !== 'extra') this.onMistake(mark);
+  }
+
+  // Pause and resume both the AI listening and the recording.
+  pause() {
+    if (!this.running) return false;
+    this.running = false;
+    if (this.listener) this.listener.stop();
+    const mr = this.recorder.mr;
+    if (mr && mr.state === 'recording') mr.pause();
+    this.onUpdate();
+    return true;
+  }
+
+  resume() {
+    if (this.running || !this.started) return;
+    this.running = true;
+    const mr = this.recorder.mr;
+    if (mr && mr.state === 'paused') mr.resume();
+    if (this.listener) this.listener.start();
+    this.onUpdate();
   }
 
   peek() {

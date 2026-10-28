@@ -2,7 +2,7 @@ import * as store from '../store.js';
 import { RecitationSession, MARK_LABEL } from '../session.js';
 import { renderWords } from './words.js';
 import { speechSupported, recordingSupported } from '../speech.js';
-import { TOTAL_PAGES } from '../quran.js';
+import { TOTAL_PAGES, audioUrl } from '../quran.js';
 import { esc, fmtDate, fmtTime, band, uid, loading, errorBox, toast } from '../ui.js';
 import { icons } from '../icons.js';
 
@@ -142,7 +142,7 @@ export default async function liveView(root, params) {
       <div class="log-item">
         <div class="spread"><span class="xs muted">${fmtTime(m.t)} · ayah ${m.ayah}</span>${m.source === 'teacher' ? '<span class="chip red">Teacher</span>' : m.status === 'confirmed' ? '<span class="chip red">AI · confirmed</span>' : '<span class="chip gold">AI suggestion</span>'}</div>
         <div class="row" style="gap:10px"><span class="quran" style="font-size:22px" lang="ar">${esc(m.word)}</span><span class="small">${esc(MARK_LABEL[m.type] || m.type)}${m.heard ? ` · heard «${esc(m.heard)}»` : ''}</span></div>
-        ${m.status === 'suggested' ? `<div class="row" style="gap:8px"><button class="btn sm" type="button" data-confirm="${m.id}">Confirm</button><button class="btn ghost sm" type="button" data-dismiss="${m.id}">Not a mistake</button></div>` : ''}
+        <div class="row" style="gap:8px;flex-wrap:wrap">${m.status === 'suggested' ? `<button class="btn sm" type="button" data-confirm="${m.id}">Confirm</button><button class="btn ghost sm" type="button" data-dismiss="${m.id}">Not a mistake</button>` : ''}<button class="btn gold sm" type="button" data-hear="${m.index}">${icons.play} Play correct</button></div>
       </div>`).join('') : '<p class="small muted">Mistakes appear here as the student recites.</p>';
     startBtn.innerHTML = session.running ? `${icons.pause} Pause` : session.started ? `${icons.mic} Resume` : `${icons.mic} Start session`;
     gradeBtn.disabled = !session.started;
@@ -154,7 +154,20 @@ export default async function liveView(root, params) {
     if (!session.started) { toast('Start the session first, so the mark is saved at the right time.'); return; }
     session.tapWord(+el.dataset.i, 'teacher');
   });
+  let hearAudio = null;
   root.querySelector('#log').addEventListener('click', (e) => {
+    const h = e.target.closest('[data-hear]');
+    if (h) {
+      const w = session.words[+h.dataset.hear];
+      if (hearAudio) hearAudio.pause();
+      const wasRunning = session.pause();
+      hearAudio = new Audio(audioUrl(store.get().settings.reciter, w.number));
+      const done = () => { hearAudio = null; if (wasRunning) session.resume(); };
+      hearAudio.onended = done;
+      hearAudio.onerror = () => { toast('Audio could not load.'); done(); };
+      hearAudio.play().catch(done);
+      return;
+    }
     const c = e.target.closest('[data-confirm]');
     const d = e.target.closest('[data-dismiss]');
     if (c) session.setMark(c.dataset.confirm, 'confirmed');
@@ -167,13 +180,9 @@ export default async function liveView(root, params) {
       root.querySelector('#recChip').hidden = !session.recording;
       tick = setInterval(() => { const t = root.querySelector('#timer'); if (t) t.textContent = fmtTime(session.elapsed()); }, 500);
     } else if (session.running) {
-      session.running = false;
-      session.listener && session.listener.stop();
-      session.recorder.mr && session.recorder.mr.state === 'recording' && session.recorder.mr.pause();
+      session.pause();
     } else {
-      session.running = true;
-      session.recorder.mr && session.recorder.mr.state === 'paused' && session.recorder.mr.resume();
-      session.listener && session.listener.start();
+      session.resume();
     }
     paint();
   });
