@@ -9,6 +9,7 @@ export function welcome(root, onDone) {
       <div class="logo-big">
         <img src="icons/icon.svg" alt="" width="96" height="96" style="border-radius:24px">
         <h1 style="font-size:28px">Recite With Me</h1>
+        <p class="small muted">Rattil Ma'i · <span lang="ar" dir="rtl" style="font-family:'IBM Plex Sans Arabic',sans-serif;font-weight:600;color:var(--green)">رتّل معي</span> · means "Recite With Me"</p>
         <p class="muted">Memorize the Quran with a daily plan, an AI that listens as you recite, and teachers who check you, to the standard of al-Haram and an-Nabawi.</p>
       </div>
       <div class="card stack-s">
