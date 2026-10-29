@@ -1,9 +1,9 @@
 // Bilingual wordmark: English line and Arabic line of equal width.
-// Arabic at 1.25x with balanced kashida (3 + 3), words pinned to the English ink edges.
+// Arabic at 1.2x with kashida (4 + 3), words pinned to the English ink edges.
 import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
 const S = process.argv[2], FONT = S + '/gfonts/ofl/alexandria/Alexandria[wght].ttf';
-const EN_W = 800, AR_W = 700, K = 1.25, A = 3, M = 3, LINE_GAP = 0.5, PAD = 8;
+const EN_W = 800, AR_W = 700, K = 1.2, A = 4, M = 3, LINE_GAP = 0.5, PAD = 8;
 const face = `@font-face{font-family:A;src:url(data:font/ttf;base64,${fs.readFileSync(FONT).toString('base64')});font-weight:100 900}`;
 const b = await chromium.launch(); const p = await b.newPage();
 await p.setContent(`<html><head><style>${face}</style></head><body></body></html>`);
@@ -18,7 +18,7 @@ const L = await p.evaluate(([EN_W, AR_W, K, A, M, LINE_GAP]) => {
   const top = Math.min(i1.t, i2.t), bot = Math.max(i1.b, i2.b), g = LINE_GAP * eh;
   return { W, H: eh + g + (bot - top), as, w1, w2, en: { x: -e.l, y: -e.t }, a1: { x: W - i1.r, y: eh + g - top }, a2: { x: -i2.l, y: eh + g - top } };
 }, [EN_W, AR_W, K, A, M, LINE_GAP]);
-const VARIANTS = { light: ['#1F6A50', '#A8812F'], dark: ['#7FCBA9', '#D9BB72'], reverse: ['#F7F3EA', '#E6D199'] };
+const VARIANTS = { light: ['#18563F', '#A8843A'], dark: ['#6DBF98', '#D8BC78'], reverse: ['#F7F3EA', '#E6D199'] }; // green = logo tile (#2E7D5F→#164C3A), a shade darker; gold = logo arch, darkened for ivory
 for (const [name, [en, ar]] of Object.entries(VARIANTS)) {
   const Wp = L.W + 2 * PAD, Hp = L.H + 2 * PAD;
   const t = (x, y, w, s, f, txt) => `<text x="${x}" y="${y}" font-family="A" font-weight="${w}" font-size="${s}" fill="${f}">${txt}</text>`;
