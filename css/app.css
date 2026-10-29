@@ -53,7 +53,8 @@
   --radius: 20px;
   --sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --ar: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
-  --ar-display: 'Amiri', 'IBM Plex Sans Arabic', serif;
+  --display: 'Alexandria', 'IBM Plex Sans', system-ui, sans-serif;
+  --ar-display: 'Alexandria', 'IBM Plex Sans Arabic', system-ui, sans-serif;
   --quran: 'Amiri Quran', 'Amiri', 'Traditional Arabic', serif;
   --tabbar-h: 72px;
 }
@@ -180,8 +181,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); min-width: 0; }
 .brand img { border-radius: 10px; flex: none; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
-.brand-name { font-weight: 600; font-size: 16.5px; letter-spacing: -0.1px; white-space: nowrap; }
-.brand-ar { font-family: var(--ar-display); color: var(--gold-ink); font-weight: 700; font-size: 15px; white-space: nowrap; direction: rtl; align-self: flex-start; }
+.brand-name { font-family: var(--display); font-weight: 700; font-size: 16.5px; letter-spacing: -0.3px; white-space: nowrap; }
+.brand-ar { font-family: var(--ar-display); color: var(--green); font-weight: 800; font-size: 15.5px; line-height: 1.25; white-space: nowrap; direction: rtl; align-self: flex-start; }
 .top-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 .role-chip {
   flex: none; height: 34px; padding: 0 12px; border-radius: 17px;
@@ -212,7 +213,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Type */
 h1, h2, h3 { margin: 0; line-height: 1.25; letter-spacing: -0.15px; }
-h1 { font-size: 24px; font-weight: 600; }
+h1, h2 { font-family: var(--display); letter-spacing: -0.3px; }
+h1 { font-size: 24px; font-weight: 700; }
 h2 { font-size: 17px; font-weight: 600; }
 h3 { font-size: 15px; font-weight: 600; }
 p { margin: 0; }
@@ -220,7 +222,7 @@ p { margin: 0; }
 .small { font-size: 13px; }
 .xs { font-size: 12px; }
 .ar { font-family: var(--ar); }
-.ar-display { font-family: var(--ar-display); font-weight: 700; }
+.ar-display { font-family: var(--ar-display); font-weight: 800; }
 .quran { font-family: var(--quran); }
 .eyebrow { font-size: 11.5px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
 .gold-text { color: var(--gold-ink); }
@@ -240,7 +242,7 @@ p { margin: 0; }
 .card.flat { border: 1px solid var(--line); box-shadow: none; }
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .stat { background: var(--card); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); border: 1px solid var(--card-border); }
-.stat b { display: block; font-size: 19px; font-weight: 600; }
+.stat b { display: block; font-family: var(--display); font-size: 19px; font-weight: 700; }
 .stat span { font-size: 12px; color: var(--muted); }
 
 /* Hero: emerald with a faint eight-point star lattice and a gold hairline */
@@ -261,7 +263,7 @@ p { margin: 0; }
 .hero .eyebrow { color: var(--gold-2); }
 .hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .hero-stats div { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(230, 209, 153, 0.22); border-radius: 14px; padding: 10px 12px; }
-.hero-stats b { display: block; font-size: 18px; font-weight: 600; color: var(--hero-ink); }
+.hero-stats b { display: block; font-family: var(--display); font-size: 19px; font-weight: 700; color: var(--hero-ink); }
 .hero-stats span { font-size: 11.5px; color: rgba(243, 238, 223, 0.74); }
 .hero .btn.gold { background: var(--gold-2); border-color: var(--gold-2); color: #3D2D08; }
 
@@ -476,8 +478,8 @@ button.w { cursor: pointer; }
 .welcome { max-width: 480px; margin: 0 auto; }
 .logo-big { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 18px 0 6px; }
 .logo-big img { border-radius: 26px; box-shadow: var(--shadow-lg); margin-bottom: 8px; }
-.logo-big .wordmark-en { font-size: 30px; font-weight: 600; letter-spacing: -0.4px; }
-.logo-big .wordmark-ar { font-family: var(--ar-display); font-weight: 700; font-size: 32px; color: var(--gold-ink); line-height: 1.4; direction: rtl; }
+.logo-big .wordmark-en { font-family: var(--display); font-size: 32px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.15; }
+.logo-big .wordmark-ar { font-family: var(--ar-display); font-weight: 800; font-size: 36px; color: var(--green); line-height: 1.45; direction: rtl; }
 .logo-big .tagline { max-width: 380px; margin-top: 8px; }
 .ornament { display: flex; align-items: center; gap: 10px; color: var(--gold); justify-content: center; }
 .ornament::before, .ornament::after { content: ""; height: 1px; width: 46px; background: linear-gradient(90deg, transparent, var(--gold)); }
@@ -487,7 +489,7 @@ button.w { cursor: pointer; }
 audio { width: 100%; }
 .footer-note { text-align: center; font-size: 12px; color: var(--muted); padding: 18px 0 0; }
 .code-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--gold-tint); border: 1px dashed var(--gold); }
-.code-box b { font-size: 24px; letter-spacing: 5px; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
+.code-box b { font-family: var(--display); font-size: 24px; letter-spacing: 5px; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
 
 @media (max-width: 380px) {
   .brand-ar { display: none; }
