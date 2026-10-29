@@ -64,6 +64,7 @@ export default function todayView(root) {
         </div>
       </section>
       <div id="liveNow"></div>
+      <div id="nextStep"></div>
       ${t.complete ? `<div class="card gold stack-s"><h2>You have completed the whole Quran. Allahumma barik.</h2><p class="small">Keep your manzil every day so it stays strong.</p></div>` : ''}
       <div class="card stack">
         <div class="spread"><h2>Today's plan</h2><span class="small muted">${doneCount} of ${items.length} done</span></div>
@@ -128,6 +129,13 @@ async function fillTeacher(root) {
   const liveBox = root.querySelector('#liveNow');
   if (live && liveBox) {
     liveBox.innerHTML = `<div class="card row" style="border:1.5px solid var(--gold)">${avatar(live.teacher || {}, 46)}<div class="grow"><h3>${esc(live.teacher?.name || 'Your teacher')} is waiting</h3><div class="xs muted">Video session · page ${(live.portions || []).map((p) => Number(p.page) || 1).join(', ')}</div></div><a class="btn sm" href="#/call/${encodeURIComponent(live.id)}">${icons.video} Join</a></div>`;
+  }
+  const next = root.querySelector('#nextStep');
+  if (next && !teachers.length && !(req && req.status === 'waiting')) {
+    next.innerHTML = `<a class="card row" href="#/find-teacher" style="text-decoration:none;color:inherit;border:1.5px solid var(--gold)">
+      <div class="icon-tile gold">${icons.users}</div>
+      <div class="grow"><h3>Next step: get your teacher</h3><div class="small muted">Tell us your language and we match you with a verified Quran teacher.</div></div>
+      <span class="btn sm">Find a teacher</span></a>`;
   }
   card.innerHTML = `<h2>My teacher</h2>${teachers.length
     ? teachers.map((t) => `<div class="list-item">${avatar(t)}<div class="grow"><h3>${esc(t.name)}</h3><div class="xs muted">Sees your plan and recordings · calls you for video sessions</div></div></div>`).join('')

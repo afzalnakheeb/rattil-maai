@@ -46,6 +46,11 @@ export function welcome(root, { googleReady, cloudReady, onLocal }) {
         ${googleReady ? '' : `<p class="xs muted" style="text-align:center">${cloudReady ? 'Google sign-in is being switched on. You can start on this device and sign in later; everything moves to your account.' : 'You seem to be offline. You can start on this device now.'}</p>`}
         ${googleReady ? '' : '<button class="btn ghost block" id="local" type="button">Start on this device for now</button>'}
       </div>
+      <div class="card stack-s">
+        <h2>How to join</h2>
+        <div class="row"><div class="icon-tile">${icons.mic}</div><div class="grow"><h3>Students</h3><p class="small muted">Continue with Google and choose <b>Student</b>. Then tap <b>Find me a teacher</b> and pick your language, or enter your teacher's class code.</p></div></div>
+        <div class="row"><div class="icon-tile gold">${icons.users}</div><div class="grow"><h3>Teachers</h3><p class="small muted">Continue with Google and choose <b>Teacher</b>. The application form opens: languages, experience and ijazah. <a href="/teach/">How teaching works</a></p></div></div>
+      </div>
       <div class="card stack-s feature-list">
         ${FEATURES.map(([ic, t, d]) => `<div class="row"><div class="icon-tile">${icons[ic]}</div><div class="grow"><h3>${t}</h3><p class="small muted">${d}</p></div></div>`).join('')}
       </div>
@@ -76,8 +81,8 @@ export function rolePicker(root, onDone, { suggest = '' } = {}) {
       </div>
       <fieldset class="card stack-s" style="border:0;margin:0">
         <legend class="label" style="padding:0;margin-bottom:8px">I am a…</legend>
-        <label class="choice"><input type="radio" name="role" value="student" ${suggest !== 'teacher' ? 'checked' : ''}><span><b>Student</b><br><span class="small muted">Daily plan, listen, recite with the AI check, video sessions with my teacher, adhkar</span></span></label>
-        <label class="choice"><input type="radio" name="role" value="teacher" ${suggest === 'teacher' ? 'checked' : ''}><span><b>Teacher</b><br><span class="small muted">My students, video and in-person sessions with AI suggestions, grading and recordings</span></span></label>
+        <label class="choice"><input type="radio" name="role" value="student" ${suggest !== 'teacher' ? 'checked' : ''}><span><b>Student · I want to learn</b><br><span class="small muted">Daily plan, recite with the AI check, adhkar. We match you with a verified teacher who speaks your language, or join your own teacher with their code.</span></span></label>
+        <label class="choice"><input type="radio" name="role" value="teacher" ${suggest === 'teacher' ? 'checked' : ''}><span><b>Teacher · I want to teach</b><br><span class="small muted">Apply to teach with the academy (every teacher is reviewed), and teach your own students with a class code, live video, AI suggestions and grading.</span></span></label>
       </fieldset>
       <button class="btn block lg" type="submit">Continue</button>
     </form>`;
@@ -88,7 +93,7 @@ export function rolePicker(root, onDone, { suggest = '' } = {}) {
     try {
       if (nm) store.update((x) => { x.profile = { ...(x.profile || {}), name: nm.value.trim() }; });
       await account.setRole(role);
-      onDone();
+      onDone(role);
     } catch { toast('Could not save. Check your connection and try again.'); }
   });
 }

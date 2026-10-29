@@ -95,7 +95,11 @@ async function render() {
   }
   if (!s.profile?.role) {
     paintChrome(route, false);
-    rolePicker(pg, () => { location.hash = '#/'; render(); }, { suggest: (() => { try { return sessionStorage.getItem('rattil:after') === 'apply' ? 'teacher' : ''; } catch { return ''; } })() });
+    rolePicker(pg, (role) => {
+      // A new teacher goes straight to the academy application; a student to Today.
+      if (role === 'teacher' && account.isCloud()) { try { sessionStorage.setItem('rattil:after', 'apply'); } catch { /* ignore */ } }
+      location.hash = '#/'; render();
+    }, { suggest: (() => { try { return sessionStorage.getItem('rattil:after') === 'apply' ? 'teacher' : ''; } catch { return ''; } })() });
     return;
   }
   if (signedIn) {

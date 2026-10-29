@@ -42,6 +42,21 @@ export function todaysSabaq(st) {
   try { const t = plan.today(p); return t.sabaq[0] || null; } catch { return null; }
 }
 
+// The teacher's standing with the academy: apply, under review, or verified.
+async function fillAcademy(root) {
+  let app = null; let prof = null;
+  try { app = await cloud.myApplication(); } catch { return; }
+  if (app?.status === 'approved') { try { prof = await cloud.teacherProfile(cloud.user()?.id); } catch { /* ignore */ } }
+  const box = root.querySelector('#academyStatus');
+  if (!box) return;
+  const card = (border, icon, title, text, link) => `<a class="card row" href="#/apply" style="text-decoration:none;color:inherit;${border}">
+    <div class="icon-tile ${icon}">${icons.users}</div><div class="grow"><h3>${title}</h3><div class="small muted">${text}</div></div>${link ? `<span class="btn sm">${link}</span>` : ''}</a>`;
+  if (!app) box.innerHTML = card('border:1.5px solid var(--gold)', 'gold', 'Teach with the academy', 'Apply to become a verified teacher. Students who speak your languages are then assigned to you.', 'Apply');
+  else if (app.status === 'pending') box.innerHTML = card('', 'gold', 'Your application is under review', 'You can keep teaching your own students with your class code meanwhile.', '');
+  else if (app.status === 'approved') box.innerHTML = card('', 'solid', 'Verified academy teacher', prof ? `${prof.accepting ? 'Taking new students' : 'Not taking new students'} · up to ${prof.capacity} academy students` : 'Students are assigned to you by language.', '');
+  else box.innerHTML = card('', 'red', 'Application not approved', app.admin_note ? esc(app.admin_note) : 'See the note from the academy.', 'View');
+}
+
 export function teacherHome(root) {
   const s = store.get();
   const cloudOn = isCloud();
@@ -57,6 +72,7 @@ export function teacherHome(root) {
           <div><b id="hsReview">–</b><span>To review</span></div>
         </div>
       </section>
+      ${cloudOn ? '<div id="academyStatus"></div>' : ''}
       ${cloudOn ? `
       <div class="card stack-s">
         <div class="spread"><h2>Your class code</h2><span class="chip gold">Share with students</span></div>
@@ -87,6 +103,7 @@ export function teacherHome(root) {
     </div>`;
 
   const link = `${SITE_URL}/#/join/${s.profile?.code || ''}`;
+  if (cloudOn) fillAcademy(root);
   root.querySelector('#copyCode')?.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(link); toast('Invite link copied'); } catch { toast(link); }
   });

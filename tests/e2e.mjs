@@ -298,6 +298,8 @@ try {
   const sabaqText = await page.textContent('.card .list-item');
   check('Today shows sabaq on page 604 first half', /Page 604, first half/.test(sabaqText), sabaqText.trim().replace(/\s+/g, ' ').slice(0, 80));
   await page.waitForSelector('#teacherCard #joinT');
+  await page.waitForSelector('#nextStep a[href="#/find-teacher"]');
+  check('Today shows "Next step: get your teacher" for a new student', true);
   check('Today offers to join a teacher with a class code', true);
   await shot(page, '02-today');
   await page.waitForTimeout(1800);
@@ -348,7 +350,12 @@ try {
   await tp.waitForSelector('#roleForm');
   await tp.check('input[value=teacher]');
   await tp.click('#roleForm button[type=submit]');
+  await tp.waitForSelector('#appForm');
+  check('Choosing Teacher opens the academy application form', true);
+  await tp.goto(BASE + '#/');
   await tp.waitForSelector('text=Your class code');
+  await tp.waitForSelector('#academyStatus .card');
+  check('Teacher home invites the teacher to apply to the academy', /Teach with the academy/.test(await tp.textContent('#academyStatus')));
   const classCode = (await tp.textContent('#code')).trim();
   check('Teacher gets a class code', /^[A-Z0-9]{6}$/.test(classCode), classCode);
   await shot(tp, '09-teacher-home');

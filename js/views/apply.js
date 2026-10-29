@@ -164,6 +164,7 @@ export async function findTeacherView(root) {
         <div class="field"><label for="rLevel">Where the student is now</label><input class="input" id="rLevel" name="level" value="${esc(r0.level)}" maxlength="80" placeholder="For example: reads well, has memorized Juz ʿAmma"></div>
         <div class="field"><label for="rNote">Anything else (times that suit you, goals)</label><textarea class="input" id="rNote" name="note" maxlength="500">${esc(r0.note)}</textarea></div>
         <button class="btn block" type="submit">${r ? 'Update my request' : 'Ask for a teacher'}</button>
+        ${r ? '' : '<a class="btn ghost block" href="#/">Not now</a>'}
         ${r ? '<button class="btn ghost block" type="button" id="cancelReq">Cancel my request</button>' : ''}
       </form>
     </div>`;
