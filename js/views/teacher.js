@@ -134,7 +134,8 @@ export function teacherHome(root) {
             <div class="row" style="gap:6px">
               <a class="btn sm" href="#/live?student=u:${st.id}&online=1" aria-label="Video session with ${esc(st.name)}">${icons.video} Video</a>
               <a class="btn sm outline" href="#/live?student=u:${st.id}">In person</a>
-              <a class="icon-btn" href="#/history?student=${st.id}" aria-label="Recordings of ${esc(st.name)}">${icons.clock}</a>
+              <a class="icon-btn" href="#/history?student=${encodeURIComponent(st.id)}" aria-label="Recordings of ${esc(st.name)}">${icons.clock}</a>
+              <a class="icon-btn" href="#/report?student=${encodeURIComponent(st.id)}" aria-label="Report for ${esc(st.name)}">${icons.grid}</a>
             </div>
           </div>`).join('') : '<p class="small muted">No students yet. Share your class code above.</p>';
       }

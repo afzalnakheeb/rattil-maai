@@ -398,6 +398,27 @@ try {
   const pv = await page.textContent('#view');
   check('Student sees the teacher’s review on their practice', /Teacher review/.test(pv) && /Repeat this portion/.test(pv));
 
+  // ---------- Parent reports ----------
+  await page.goto(BASE + '#/report');
+  await page.waitForSelector('.hero', { timeout: 8000 });
+  const rep = await page.textContent('#view');
+  check('Weekly report shows a summary', /Yusuf recited \d+ times/.test(rep), (rep.match(/Yusuf recited[^.]*\./) || [''])[0].slice(0, 90));
+  check('Report lists words to revise', /Words to revise/.test(rep));
+  check('Report shows teacher feedback with the comment', /Mashallah\. Revise/.test(rep));
+  check('Report counts mistakes by type', /Skipped word · \d/.test(rep));
+  await page.screenshot({ path: path.join(OUT, '23-report-week.png'), fullPage: true });
+  await page.click('[data-range="month"]');
+  await page.waitForSelector('text=Monthly report for parents');
+  check('Monthly report switches the period', /\/30/.test(await page.textContent('#view')));
+  await page.click('#older');
+  await page.waitForTimeout(300);
+  check('Previous period shows an empty report without errors', /did not record/.test(await page.textContent('#view')));
+  check('No sideways scrolling on the report', await noOverflow(page));
+  await tp.goto(BASE + `#/report?student=${studentId}`);
+  await tp.waitForSelector('.hero', { timeout: 8000 });
+  check('Teacher sees the same report for the student', /Yusuf Ali/.test(await tp.textContent('#view')) && /Words to revise/.test(await tp.textContent('#view')));
+  await shot(tp, '24-report-teacher');
+
   // ---------- In-person session on the teacher's device ----------
   await tp.goto(BASE + '#/');
   await tp.fill('#newStudent', 'Maryam');

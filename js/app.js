@@ -16,6 +16,7 @@ import callView from './views/call.js';
 import prayerView from './views/prayer.js';
 import duasView from './views/duas.js';
 import moreView from './views/more.js';
+import reportView from './views/report.js';
 
 const view = document.getElementById('view');
 const tabbar = document.getElementById('tabbar');
@@ -34,7 +35,7 @@ const TABS = {
     ['', 'Home', 'home'], ['live', 'Session', 'video'], ['mushaf', 'Mushaf', 'book'], ['history', 'Recordings', 'clock'], ['more', 'More', 'grid'],
   ],
 };
-const MORE_ROUTES = ['more', 'adhkar', 'duas', 'history', 'settings', 'prayer'];
+const MORE_ROUTES = ['more', 'adhkar', 'duas', 'history', 'settings', 'prayer', 'report'];
 
 function parse() {
   const raw = location.hash.replace(/^#\/?/, '');
@@ -111,6 +112,7 @@ async function render() {
     case 'call': out = callView(view, { ...params, id }); break;
     case 'join': out = joinView(view, { ...params, id }); break;
     case 'more': out = moreView(view, params); break;
+    case 'report': out = reportView(view, params); break;
     case 'settings': out = settingsView(view, params, ctx); break;
     default: view.innerHTML = '<div class="empty card">Page not found. <a href="#/">Go home</a></div>';
   }

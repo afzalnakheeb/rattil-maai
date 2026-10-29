@@ -6,6 +6,7 @@ const TILES = [
   ['adhkar', 'Adhkar', 'Morning, evening, after salah, sleep', 'sun', 'gold'],
   ['duas', 'Duas and Ruqyah', 'Short and full Ruqyah, duas for every moment', 'hands', 'gold'],
   ['prayer', 'Prayer times and Qibla', 'Salah times for your city and the Qibla compass', 'moon', ''],
+  ['report', 'Reports for parents', 'Weekly and monthly progress, mistakes and teacher feedback', 'grid', ''],
   ['history', 'Recordings', 'Every practice and teacher session with marks', 'clock', ''],
   ['mushaf', 'Mushaf', 'Listen with ayah highlighting and repeat', 'book', ''],
   ['settings', 'Settings', 'Account, teacher, theme, reciter and plan', 'gear', ''],

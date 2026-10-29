@@ -102,6 +102,11 @@ export default function todayView(root) {
         <p>${t.complete ? 'Hifz complete.' : `At this pace you complete the Quran around <b>${esc(finish)}</b>, in sha Allah.`}</p>
         <p class="small muted">Track: ${esc(plan.TRACKS.find((x) => x.id === s.plan.track)?.label || '')}. Change it in Settings.</p>
       </div>
+      <a class="card row" href="#/report" style="text-decoration:none;color:inherit">
+        <div class="icon-tile gold">${icons.grid}</div>
+        <div class="grow"><h3>Report for parents</h3><div class="small muted">This week’s progress, mistakes and teacher feedback, ready to share</div></div>
+        <span class="muted" aria-hidden="true">${icons.next.replace('<svg', '<svg width="18" height="18"')}</span>
+      </a>
       <div class="card stack-s" id="teacherCard">
         <h2>My teacher</h2>
         ${isCloud() ? '<div class="spinner"></div>' : `<p class="small muted">Sign in with Google to join your teacher's class. Your teacher can then review your practice and call you for video sessions.</p><div><a class="btn sm" href="#/signin">Sign in with Google</a></div>`}

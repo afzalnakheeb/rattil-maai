@@ -1,10 +1,10 @@
 // Offline support: the app shell is cached; Quran text is cached as it is read.
-const VERSION = 'rwm-v9';
+const VERSION = 'rwm-v10';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-small.svg', 'icons/icon-192.png',
   'js/app.js', 'js/store.js', 'js/ui.js', 'js/icons.js', 'js/arabic.js', 'js/quran.js', 'js/plan.js', 'js/adhkar.js',
   'js/speech.js', 'js/player.js', 'js/session.js', 'js/config.js', 'js/cloud.js', 'js/account.js', 'js/records.js',
-  'js/call.js', 'js/theme.js', 'js/fullscreen.js', 'js/prayer.js', 'js/duas.js', 'icons/icon-512.png', 'icons/wordmark-light.svg', 'icons/wordmark-dark.svg',
+  'js/call.js', 'js/theme.js', 'js/fullscreen.js', 'js/report.js', 'js/views/report.js', 'js/prayer.js', 'js/duas.js', 'icons/icon-512.png', 'icons/wordmark-light.svg', 'icons/wordmark-dark.svg',
   'js/views/today.js', 'js/views/mushaf.js', 'js/views/recite.js', 'js/views/adhkar.js', 'js/views/history.js',
   'js/views/teacher.js', 'js/views/settings.js', 'js/views/words.js', 'js/views/call.js', 'js/views/prayer.js',
   'js/views/duas.js', 'js/views/more.js',
