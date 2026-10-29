@@ -3,7 +3,7 @@
 // The rest of the app only talks to this module (tests swap it for a fake).
 
 import { SUPABASE_URL, SUPABASE_KEY, SUPABASE_JS } from './config.js';
-import { cleanSession, cleanCall, cleanPerson, cleanState } from './clean.js';
+import { cleanSession, cleanCall, cleanPerson, cleanState, cleanApplication, cleanTeacher, cleanRequest } from './clean.js';
 
 let sb = null;
 let me = null;
@@ -321,4 +321,85 @@ export async function iceServers() {
     if (Array.isArray(data?.iceServers) && data.iceServers.length) return data.iceServers;
   } catch { /* fall back */ }
   return STUN;
+}
+
+// ---- Academy: teacher applications, approved teachers, students asking for a teacher ----
+export async function amIAdmin() {
+  if (!sb || !me) return false;
+  try { return !!check(await sb.rpc('am_i_admin')); } catch { return false; }
+}
+
+export async function myApplication() {
+  need();
+  return check(await sb.from('teacher_applications').select('*').eq('user_id', me.id).maybeSingle());
+}
+
+export async function submitApplication(a) {
+  need();
+  const row = cleanApplication({ ...a, user_id: me.id });
+  delete row.status; delete row.admin_note; delete row.id; delete row.created_at; delete row.reviewed_at;
+  const existing = await myApplication();
+  if (existing) return check(await sb.from('teacher_applications').update({ ...row, updated_at: new Date().toISOString() }).eq('user_id', me.id).select('*').single());
+  return check(await sb.from('teacher_applications').insert(row).select('*').single());
+}
+
+export async function listApplications() {
+  need();
+  const rows = check(await sb.from('teacher_applications').select('*').order('created_at', { ascending: false }));
+  const people = await names(rows.map((r) => r.user_id));
+  return rows.map((r) => ({ ...cleanApplication(r), email: people[r.user_id]?.email || '', avatar_url: people[r.user_id]?.avatar_url || '' }));
+}
+
+export async function reviewApplication(id, decision, note = '', cap = 10) {
+  need();
+  check(await sb.rpc('admin_review_application', { app_id: id, decision, note, cap }));
+}
+
+export async function listTeachers() {
+  need();
+  const rows = check(await sb.from('teacher_profiles').select('*').order('approved_at', { ascending: true }));
+  let load = [];
+  try { load = check(await sb.rpc('teacher_load')) || []; } catch { /* not admin */ }
+  return rows.map((r) => ({ ...cleanTeacher(r), students: Number(load.find((x) => x.teacher_id === r.user_id)?.students || 0) }));
+}
+
+export async function teacherProfile(id) {
+  need();
+  const r = check(await sb.from('teacher_profiles').select('*').eq('user_id', id).maybeSingle());
+  return r ? cleanTeacher(r) : null;
+}
+
+export async function updateTeacher(id, cap, accepting) {
+  need();
+  check(await sb.rpc('admin_update_teacher', { teacher: id, cap, is_accepting: accepting }));
+}
+
+export async function myTeacherRequest() {
+  need();
+  const r = check(await sb.from('teacher_requests').select('*').eq('student_id', me.id).maybeSingle());
+  return r ? cleanRequest(r) : null;
+}
+
+export async function requestTeacher(req) {
+  need();
+  const row = cleanRequest({ ...req, student_id: me.id, status: 'waiting', teacher_id: null });
+  delete row.created_at; delete row.assigned_at;
+  return cleanRequest(check(await sb.from('teacher_requests').upsert(row, { onConflict: 'student_id' }).select('*').single()));
+}
+
+export async function cancelTeacherRequest() {
+  need();
+  check(await sb.from('teacher_requests').update({ status: 'cancelled' }).eq('student_id', me.id));
+}
+
+export async function listRequests() {
+  need();
+  const rows = check(await sb.from('teacher_requests').select('*').order('created_at', { ascending: true }));
+  const people = await names(rows.map((r) => r.student_id));
+  return rows.map((r) => ({ ...cleanRequest(r), email: people[r.student_id]?.email || '', avatar_url: people[r.student_id]?.avatar_url || '' }));
+}
+
+export async function assignTeacher(studentId, teacherId) {
+  need();
+  check(await sb.rpc('admin_assign', { student: studentId, teacher: teacherId }));
 }

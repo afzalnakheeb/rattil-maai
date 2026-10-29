@@ -63,7 +63,8 @@ const BASE = `http://127.0.0.1:${server.address().port}/`;
 
 
 // ---------- fake cloud (one shared database for every browser window) ----------
-const db = { profiles: [], links: [], state: {}, sessions: [], reviews: [], calls: [], files: {} };
+const db = { profiles: [], links: [], state: {}, sessions: [], reviews: [], calls: [], files: {}, apps: [], teachers: [], requests: [] };
+const ADMIN_EMAILS = ['admin@gmail.com'];
 const ctxUser = new Map();
 const ctxIdentity = new Map();
 const rooms = new Map();
@@ -145,6 +146,42 @@ const api = {
     if (!c) return true;
     Object.assign(c, p, p.status === 'ended' ? { ended_at: iso() } : {});
     emit([...pagesOf(c.teacher_id), ...pagesOf(c.student_id)], { kind: 'calls', row: c, type: 'UPDATE' });
+    return true;
+  },
+  // Academy (mirrors the Supabase policies and admin functions)
+  amIAdmin(ctx, uid) { return ADMIN_EMAILS.includes(prof(uid).email); },
+  myApplication(ctx, uid) { return db.apps.find((x) => x.user_id === uid) || null; },
+  submitApplication(ctx, uid, [a]) {
+    let x = db.apps.find((y) => y.user_id === uid);
+    if (x && x.status !== 'pending') return { __error: 'rls' };
+    if (!x) { x = { id: uuid(), user_id: uid, status: 'pending', admin_note: '', created_at: iso(), reviewed_at: null }; db.apps.push(x); }
+    const { status, admin_note, id, user_id, created_at, reviewed_at, ...rest } = a;
+    Object.assign(x, rest, { updated_at: iso() });
+    return { ...x };
+  },
+  listApplications(ctx, uid) { if (!api.amIAdmin(ctx, uid)) return []; return db.apps.map((x) => ({ ...x, email: prof(x.user_id)?.email || '' })); },
+  reviewApplication(ctx, uid, [id, decision, note, cap]) {
+    if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' };
+    const a = db.apps.find((x) => x.id === id); if (!a) return { __error: 'Application not found' };
+    Object.assign(a, { status: decision, admin_note: note || '', reviewed_at: iso() });
+    if (decision === 'approved') {
+      db.teachers = db.teachers.filter((t) => t.user_id !== a.user_id).concat({ user_id: a.user_id, name: a.name, country: a.country, gender: a.gender, languages: a.languages, years_experience: a.years_experience, ijazah: a.ijazah, qualifications: a.qualifications, teaches: a.teaches, bio: a.bio, availability: a.availability, capacity: cap, accepting: true, approved_at: iso() });
+      prof(a.user_id).role = 'teacher';
+    } else db.teachers.filter((t) => t.user_id === a.user_id).forEach((t) => { t.accepting = false; t.capacity = 0; });
+    return true;
+  },
+  listTeachers(ctx, uid) { return db.teachers.map((t) => ({ ...t, students: api.amIAdmin(ctx, uid) || t.user_id === uid ? db.links.filter((l) => l.teacher_id === t.user_id).length : 0 })); },
+  teacherProfile(ctx, uid, [id]) { return db.teachers.find((t) => t.user_id === id) || null; },
+  updateTeacher(ctx, uid, [id, cap, acc]) { if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' }; const t = db.teachers.find((x) => x.user_id === id); if (t) Object.assign(t, { capacity: cap, accepting: acc }); return true; },
+  myTeacherRequest(ctx, uid) { return db.requests.find((r) => r.student_id === uid) || null; },
+  requestTeacher(ctx, uid, [r]) { db.requests = db.requests.filter((x) => x.student_id !== uid).concat({ ...r, student_id: uid, status: 'waiting', teacher_id: null, created_at: iso() }); return db.requests.find((x) => x.student_id === uid); },
+  cancelTeacherRequest(ctx, uid) { const r = db.requests.find((x) => x.student_id === uid); if (r) r.status = 'cancelled'; return true; },
+  listRequests(ctx, uid) { if (!api.amIAdmin(ctx, uid)) return []; return db.requests.map((r) => ({ ...r, email: prof(r.student_id)?.email || '' })); },
+  assignTeacher(ctx, uid, [s, t]) {
+    if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' };
+    if (!db.teachers.some((x) => x.user_id === t)) return { __error: 'Not an approved teacher' };
+    if (!teacherOf(t, s)) db.links.push({ teacher_id: t, student_id: s, created_at: iso() });
+    const r = db.requests.find((x) => x.student_id === s); if (r) Object.assign(r, { status: 'assigned', teacher_id: t, assigned_at: iso() });
     return true;
   },
   openCalls(ctx, uid) { return db.calls.filter((c) => (c.teacher_id === uid || c.student_id === uid) && c.status !== 'ended').map(callOut); },
@@ -485,6 +522,99 @@ try {
   await dp.waitForTimeout(200);
   const barOk = await dp.evaluate(() => { const r = document.querySelector('#tabbar').getBoundingClientRect(); return r.height > 40 && r.bottom <= innerHeight + 1 && r.top < innerHeight; });
   check('Bottom tab bar stays on screen on a short phone screen', barOk);
+  // ---------- Academy: apply to teach, admin approves, student asks, admin assigns ----------
+  const ap = await newPage({ width: 390, height: 844 }, { email: 'maryam.teacher@gmail.com', name: 'Maryam Khan' });
+  await ap.goto(BASE + '#/apply');
+  await ap.waitForSelector('#google');
+  await ap.click('#google');
+  await ap.waitForSelector('#roleForm');
+  check('Arriving to apply suggests the Teacher role', await ap.isChecked('#roleForm input[value="teacher"]'));
+  await ap.click('#roleForm button[type=submit]');
+  await ap.waitForSelector('#appForm');
+  check('After sign-in the teacher lands on the application form', true);
+  await ap.click('#appForm input[name="gender"][value="female"]', { force: true });
+  await ap.fill('#aYears', '12');
+  await ap.fill('#aCountry', 'Pakistan');
+  for (const l of ['ur', 'en']) await ap.check(`#appForm input[name="lang"][value="${l}"]`);
+  await ap.check('#appForm input[name="teaches"][value="children"]');
+  await ap.fill('#aIjazah', 'Ijazah in Hafs from Jamia Ashrafia, Lahore');
+  await ap.fill('#aBio', 'I teach children and sisters with patience. <script>x</script>');
+  await ap.fill('#aAvail', 'Weekdays after Asr (GMT+5)');
+  await ap.click('#appForm button[type=submit]');
+  await ap.waitForSelector('text=Under review');
+  check('Teacher application is sent and shows "Under review"', db.apps.length === 1 && db.apps[0].years_experience === 12 && [...db.apps[0].languages].sort().join() === 'en,ur', JSON.stringify(db.apps[0] || {}).slice(0, 160));
+  await shot(ap, '40-apply');
+  check('No sideways scrolling on the application form', await noOverflow(ap));
+
+  const sp = await newPage({ width: 390, height: 844 }, { email: 'aisha.student@gmail.com', name: 'Aisha' });
+  await sp.goto(BASE);
+  await sp.click('#google');
+  await sp.waitForSelector('#roleForm');
+  await sp.click('#roleForm button[type=submit]');
+  await sp.waitForSelector('#planForm');
+  await sp.click('#planForm button[type=submit]');
+  await sp.waitForSelector('#teacherCard a[href="#/find-teacher"]');
+  check('Today offers "Find me a teacher" when there is no teacher', true);
+  await sp.click('#teacherCard a[href="#/find-teacher"]');
+  await sp.waitForSelector('#reqForm');
+  await sp.check('#reqForm input[name="lang"][value="ur"]');
+  await sp.click('#reqForm input[name="tg"][value="female"]', { force: true });
+  await sp.click('#reqForm input[name="age"][value="child"]', { force: true });
+  await sp.fill('#rLevel', 'Reads Qaida');
+  await sp.click('#reqForm button[type=submit]');
+  await sp.waitForSelector('text=You are on the list');
+  check('Student request is saved with language and teacher gender', db.requests[0]?.languages?.[0] === 'ur' && db.requests[0]?.teacher_gender === 'female');
+
+  const adm = await newPage({ width: 1280, height: 860 }, { email: 'admin@gmail.com', name: 'Afzal' });
+  await adm.goto(BASE + '#/admin');
+  await adm.click('#google');
+  await adm.waitForSelector('#roleForm');
+  await adm.click('#roleForm button[type=submit]');
+  await adm.waitForSelector('#planForm, .admin-tabs', { timeout: 8000 });
+  if (await adm.locator('#planForm').count()) { await adm.click('#planForm button[type=submit]'); await adm.goto(BASE + '#/admin'); }
+  await adm.waitForSelector('.admin-tabs');
+  check('Admin panel opens for the admin account', true);
+  const ov = await adm.textContent('#pane');
+  check('Overview counts the application and the waiting student', /1\s*Applications to review/.test(ov.replace(/\s+/g, ' ')) && /1\s*Students waiting/.test(ov.replace(/\s+/g, ' ')), ov.replace(/\s+/g, ' ').slice(0, 120));
+  await shot(adm, '41-admin-overview');
+  await adm.click('[data-tab="applications"]');
+  await adm.waitForSelector('[data-app]');
+  const appTxt = await adm.textContent('[data-app]');
+  check('Application shows experience, languages and ijazah', /12 years/.test(appTxt) && /Urdu/.test(appTxt) && /Jamia Ashrafia/.test(appTxt));
+  check('Application text is escaped (no injected script)', (await adm.locator('[data-app] script').count()) === 0 && /<script>x<\/script>/.test(appTxt));
+  await adm.fill('[data-app] input[id^="cap-"]', '8');
+  await adm.click('[data-review="approved"]');
+  await adm.waitForSelector('text=Approved. The teacher is now verified.');
+  check('Approving makes a verified teacher with the capacity set', db.teachers.length === 1 && db.teachers[0].capacity === 8);
+  await adm.click('[data-tab="students"]');
+  await adm.waitForSelector('[data-req] [data-assign]');
+  const reqTxt = await adm.textContent('[data-req]');
+  check('Waiting student is matched to the Urdu-speaking female teacher', /Maryam Khan/.test(reqTxt) && /Urdu/.test(reqTxt));
+  await shot(adm, '42-admin-match');
+  await adm.click('[data-req] [data-assign]');
+  await adm.waitForSelector('text=Recently matched');
+  const aishaId = db.profiles.find((p) => p.email === 'aisha.student@gmail.com').id;
+  const maryamId = db.profiles.find((p) => p.email === 'maryam.teacher@gmail.com').id;
+  check('Assigning links the student to the teacher', db.links.some((l) => l.teacher_id === maryamId && l.student_id === aishaId));
+  await adm.click('[data-tab="teachers"]');
+  await adm.waitForSelector('.teacher-card');
+  check('Teacher card shows 1 of 8 students', /1 of 8 students/.test(await adm.textContent('.teacher-card')));
+  check('No sideways scrolling on the admin panel', await noOverflow(adm));
+
+  await sp.goto(BASE + '#/');
+  await sp.waitForSelector('#teacherCard .list-item');
+  check('Student now sees the assigned teacher on Today', /Maryam Khan/.test(await sp.textContent('#teacherCard')));
+  await sp.goto(BASE + '#/find-teacher');
+  await sp.waitForSelector('.teacher-card');
+  check('Student sees the teacher profile card (experience, languages)', /12 years teaching/.test(await sp.textContent('.teacher-card')));
+  const nonAdmin = sp;
+  await nonAdmin.goto(BASE + '#/admin');
+  await nonAdmin.waitForSelector('text=This page is for academy admins.');
+  check('A non-admin cannot open the admin panel', true);
+  await ap.goto(BASE + '#/');
+  await ap.waitForSelector('text=Aisha', { timeout: 8000 }).catch(() => {});
+  check('The teacher sees the assigned student on Home', /Aisha/.test(await ap.textContent('#view')));
+  await Promise.all([ap.context().close(), sp.context().close(), adm.context().close()]);
 } catch (e) {
   check('Run finished without exceptions', false, String(e).split('\n')[0]);
 } finally {

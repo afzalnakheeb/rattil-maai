@@ -117,3 +117,74 @@ export function cleanState(d) {
   out.adhkar = adhkar;
   return out;
 }
+
+// ---- Academy ----
+export const LANGUAGES = [
+  ['ar', 'Arabic', 'العربية'], ['en', 'English', 'English'], ['ur', 'Urdu', 'اردو'], ['ms', 'Malay', 'Bahasa Melayu'],
+  ['id', 'Indonesian', 'Bahasa Indonesia'], ['tr', 'Turkish', 'Türkçe'], ['fr', 'French', 'Français'], ['bn', 'Bengali', 'বাংলা'],
+  ['hi', 'Hindi', 'हिन्दी'], ['fa', 'Persian', 'فارسی'], ['ps', 'Pashto', 'پښتو'], ['so', 'Somali', 'Soomaali'],
+  ['sw', 'Swahili', 'Kiswahili'], ['ha', 'Hausa', 'Hausa'], ['ta', 'Tamil', 'தமிழ்'], ['ml', 'Malayalam', 'മലയാളം'],
+  ['ru', 'Russian', 'Русский'], ['de', 'German', 'Deutsch'], ['es', 'Spanish', 'Español'],
+];
+export const LANG_CODES = LANGUAGES.map((l) => l[0]);
+export const langName = (c) => (LANGUAGES.find((l) => l[0] === c) || [c, c])[1];
+export const TEACHES = [['qaida', 'Noorani Qaida (beginners)'], ['nazra', 'Reading (nazra)'], ['hifz', 'Memorization (hifz)'], ['tajweed', 'Tajweed'], ['ijazah', 'Ijazah with sanad'], ['children', 'Children']];
+const langs = (v, max) => [...new Set((Array.isArray(v) ? v : []).filter((x) => LANG_CODES.includes(x)))].slice(0, max);
+
+export function cleanApplication(a) {
+  if (!a || typeof a !== 'object') return null;
+  return {
+    id: id(a.id), user_id: id(a.user_id),
+    name: str(a.name, 80).trim(), country: str(a.country, 60).trim(),
+    gender: oneOf(a.gender, ['male', 'female'], 'male'),
+    languages: langs(a.languages, 8),
+    years_experience: int(a.years_experience, 0, 0, 70),
+    ijazah: str(a.ijazah, 400), qualifications: str(a.qualifications, 600),
+    teaches: [...new Set((Array.isArray(a.teaches) ? a.teaches : []).filter((x) => TEACHES.some((t) => t[0] === x)))],
+    bio: str(a.bio, 1200), availability: str(a.availability, 400),
+    hours_per_week: int(a.hours_per_week, 5, 1, 80), phone: str(a.phone, 30).replace(/[^\d+ ()-]/g, ''),
+    status: oneOf(a.status, ['pending', 'approved', 'declined'], 'pending'),
+    admin_note: str(a.admin_note, 600), created_at: str(a.created_at, 40), reviewed_at: a.reviewed_at ? str(a.reviewed_at, 40) : null,
+  };
+}
+
+export function cleanTeacher(t) {
+  if (!t || typeof t !== 'object') return null;
+  return {
+    user_id: id(t.user_id), name: str(t.name, 80), country: str(t.country, 60),
+    gender: oneOf(t.gender, ['male', 'female'], 'male'), languages: langs(t.languages, 8),
+    years_experience: int(t.years_experience, 0, 0, 70), ijazah: str(t.ijazah, 400), qualifications: str(t.qualifications, 600),
+    teaches: (Array.isArray(t.teaches) ? t.teaches : []).filter((x) => TEACHES.some((k) => k[0] === x)),
+    bio: str(t.bio, 1200), availability: str(t.availability, 400),
+    capacity: int(t.capacity, 10, 0, 200), accepting: t.accepting !== false, approved_at: str(t.approved_at, 40),
+  };
+}
+
+export function cleanRequest(r) {
+  if (!r || typeof r !== 'object') return null;
+  return {
+    student_id: id(r.student_id), student_name: str(r.student_name, 80), languages: langs(r.languages, 6),
+    teacher_gender: oneOf(r.teacher_gender, ['any', 'male', 'female'], 'any'),
+    age_group: oneOf(r.age_group, ['child', 'teen', 'adult'], 'adult'),
+    level: str(r.level, 80), note: str(r.note, 500),
+    status: oneOf(r.status, ['waiting', 'assigned', 'cancelled'], 'waiting'),
+    teacher_id: r.teacher_id ? id(r.teacher_id) : null,
+    created_at: str(r.created_at, 40), assigned_at: r.assigned_at ? str(r.assigned_at, 40) : null,
+  };
+}
+
+// Best teachers for a student: speaks their language, matches the gender wish, has room, fewer students first.
+export function matchTeachers(req, teachers) {
+  return teachers
+    .map((t) => {
+      const shared = t.languages.filter((l) => req.languages.includes(l));
+      const room = t.accepting && t.students < t.capacity;
+      const genderOk = req.teacher_gender === 'any' || req.teacher_gender === t.gender;
+      const kids = req.age_group === 'child' ? (t.teaches.includes('children') ? 1 : 0) : 0;
+      const score = (shared.length ? 100 : 0) + (genderOk ? 40 : -100) + (room ? 30 : -60) + kids * 10
+        + (shared[0] === req.languages[0] ? 15 : 0) - (t.capacity ? (t.students / t.capacity) * 20 : 20);
+      return { teacher: t, shared, room, genderOk, score };
+    })
+    .filter((m) => m.shared.length && m.genderOk)
+    .sort((a, b) => b.score - a.score);
+}

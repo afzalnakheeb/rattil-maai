@@ -65,7 +65,7 @@ export function welcome(root, { googleReady, cloudReady, onLocal }) {
 }
 
 // After sign-in (or device-only start) when no role is chosen yet.
-export function rolePicker(root, onDone) {
+export function rolePicker(root, onDone, { suggest = '' } = {}) {
   const s = store.get();
   root.innerHTML = `
     <form class="stack welcome" id="roleForm">
@@ -76,8 +76,8 @@ export function rolePicker(root, onDone) {
       </div>
       <fieldset class="card stack-s" style="border:0;margin:0">
         <legend class="label" style="padding:0;margin-bottom:8px">I am a…</legend>
-        <label class="choice"><input type="radio" name="role" value="student" checked><span><b>Student</b><br><span class="small muted">Daily plan, listen, recite with the AI check, video sessions with my teacher, adhkar</span></span></label>
-        <label class="choice"><input type="radio" name="role" value="teacher"><span><b>Teacher</b><br><span class="small muted">My students, video and in-person sessions with AI suggestions, grading and recordings</span></span></label>
+        <label class="choice"><input type="radio" name="role" value="student" ${suggest !== 'teacher' ? 'checked' : ''}><span><b>Student</b><br><span class="small muted">Daily plan, listen, recite with the AI check, video sessions with my teacher, adhkar</span></span></label>
+        <label class="choice"><input type="radio" name="role" value="teacher" ${suggest === 'teacher' ? 'checked' : ''}><span><b>Teacher</b><br><span class="small muted">My students, video and in-person sessions with AI suggestions, grading and recordings</span></span></label>
       </fieldset>
       <button class="btn block lg" type="submit">Continue</button>
     </form>`;
@@ -142,6 +142,12 @@ export default function settingsView(root, params, { rerender }) {
         <form class="row" id="joinForm" style="margin-top:4px"><label class="sr-only" for="code">Class code</label><input class="input grow code" id="code" maxlength="6" placeholder="CODE" autocomplete="off" autocapitalize="characters" required><button class="btn sm" type="submit">Join</button></form>
         <p class="xs muted">Ask your teacher for their 6-letter class code.</p>
       </div>` : ''}
+      ${cloudOn ? `
+      <div class="card stack-s" id="academyCard">
+        <h2>Academy</h2>
+        ${!isTeacher ? '<a class="list-item" href="#/find-teacher" style="text-decoration:none;color:inherit"><div class="grow"><h3>Find me a teacher</h3><div class="xs muted">Matched by your language</div></div></a>' : ''}
+        <a class="list-item" href="#/apply" style="text-decoration:none;color:inherit"><div class="grow"><h3>Teach with us</h3><div class="xs muted">Apply to become a verified teacher</div></div></a>
+      </div>` : ''}
       <div class="card stack-s">
         <h2>Appearance</h2>
         <div class="seg full three" role="group" aria-label="Theme">
@@ -202,6 +208,12 @@ export default function settingsView(root, params, { rerender }) {
     const link = `${SITE_URL}/#/join/${s.profile.code}`;
     try { await navigator.clipboard.writeText(link); toast('Invite link copied'); } catch { toast(link); }
   });
+  if (root.querySelector('#academyCard')) {
+    cloud.amIAdmin().then((yes) => {
+      const c = root.querySelector('#academyCard');
+      if (yes && c) c.insertAdjacentHTML('beforeend', '<a class="list-item" href="#/admin" style="text-decoration:none;color:inherit"><div class="grow"><h3>Admin panel</h3><div class="xs muted">Teacher applications, teachers and students waiting</div></div><span class="chip gold">Admin</span></a>');
+    }).catch(() => {});
+  }
   if (root.querySelector('#teachers')) {
     cloud.myTeachers().then((list) => {
       const box = root.querySelector('#teachers');

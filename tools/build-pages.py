@@ -49,6 +49,8 @@ FAQ_EN = [
    'Yes, in the browser on any phone, tablet or computer. Add it to your home screen to use it full screen like an app. The AI recitation check needs Chrome, Edge or Safari.'),
   ('How are prayer times and the Qibla calculated?',
    'Prayer times are calculated on your device using the method of your country, such as Umm al-Qura (Saudi Arabia), the UAE Awqaf method with its 3-minute precautions, the Muslim World League, Egypt, Karachi or ISNA, with Standard or Hanafi Asr. You can adjust each prayer by minutes to match your mosque. The Qibla direction uses the great-circle bearing to the Kaaba, with a live compass on phones. Your location stays on your device.'),
+  ('How do I get a teacher, and can I teach?',
+   'Students can ask the academy for a teacher in the app (Find me a teacher). They choose their languages and, if they wish, a male or female teacher, and the academy matches them with a verified teacher who speaks that language. Quran teachers from any country can apply at rattilmai.com/teach/ with their languages, years of experience and ijazah.'),
   ('Is my data private?',
    'Recordings are kept in private storage and can be opened only by you and the teacher you joined. The app has no advertising and does not sell data. Video calls connect the two devices directly and are encrypted.'),
 ]
@@ -93,7 +95,7 @@ def page(path, lang, title, desc, body, ld_extra=(), alt=None):
         alts = ''.join(f'<link rel="alternate" hreflang="{h}" href="{SITE}{u}">' for h, u in alt)
     nav = [('/', 'Open the app' if lang == 'en' else 'افتح التطبيق'), ('/about/', 'About' if lang == 'en' else 'عن التطبيق'),
            ('/faq/', 'FAQ' if lang == 'en' else 'الأسئلة الشائعة'), ('/ar/' if lang == 'en' else '/about/', 'العربية' if lang == 'en' else 'English'),
-           ('/privacy/', 'Privacy' if lang == 'en' else 'الخصوصية'), ('/terms/', 'Terms' if lang == 'en' else 'الشروط')]
+           ('/teach/', 'Teach with us' if lang == 'en' else 'علّم معنا'), ('/privacy/', 'Privacy' if lang == 'en' else 'الخصوصية'), ('/terms/', 'Terms' if lang == 'en' else 'الشروط')]
     return f'''<!doctype html>
 <html lang="{lang}" dir="{dir_}">
 <head>
@@ -216,6 +218,26 @@ pages['ar/index.html'] = page('/ar/', 'ar',
 {faq_html(FAQ_AR)}
 </article>''', [APP_LD, faq_ld(FAQ_AR)], alt=[('en', '/about/'), ('ar', '/ar/'), ('x-default', '/')])
 
+pages['teach/index.html'] = page('/teach/', 'en',
+  'Teach the Quran online with Recite With Me · رتّل معي — apply as a teacher',
+  'Quran teachers from every country can apply to Recite With Me: teach hifz, tajweed and Noorani Qaida live on video, with an AI that follows every word. Students are matched to you by language.',
+  f'''<article>
+<p class="eyebrow">For teachers</p>
+<h1>Teach the Quran with Recite With Me</h1>
+<p class="lead">We welcome qualified Quran teachers from every country. Students and parents ask the academy for a teacher in their language — Arabic, English, Urdu, Malay, Indonesian, Turkish, French, Bengali and more — and we match them with a verified teacher who speaks it.</p>
+<div class="cta"><a class="btn" href="/#/apply">Apply to teach</a><a class="btn outline" href="/about/">About the app</a></div>
+<h2>How it works</h2>
+<ul>
+<li><b>Apply</b> with your Google account: your languages, years of teaching, ijazah and sanad, studies, a short bio and the times you are free.</li>
+<li><b>We review</b> every application. Approved teachers get a verified profile that students and parents can see.</li>
+<li><b>Students are matched</b> to you by language, by teacher gender if the family asks, and by the number of students you want.</li>
+<li><b>Teach live</b> on free video in the browser. The AI listens on the student's phone and shows you what it hears; you confirm, add your own marks and grade out of 100.</li>
+<li>Every session is <b>recorded with your marks</b>, and parents get weekly and monthly reports.</li>
+</ul>
+<h2>Who can apply</h2>
+<p>Teachers of Quran reading (nazra), Noorani Qaida, hifz, tajweed and ijazah, for children and adults. Male teachers and female teachers are both needed, especially for girls and women.</p>
+</article>''', [crumbs('Teach', '/teach/')])
+
 pages['privacy/index.html'] = page('/privacy/', 'en',
   'Privacy policy — Recite With Me · رتّل معي',
   'How Recite With Me handles your data: Google sign-in, recordings, marks and progress, video calls, speech recognition and prayer location. No ads, no selling of data.',
@@ -228,6 +250,8 @@ pages['privacy/index.html'] = page('/privacy/', 'en',
 <li><b>Your Google account basics</b> when you sign in: name, email address and profile photo, used to identify you and to show you to your linked teacher or students.</li>
 <li><b>Your learning record:</b> your hifz plan, daily progress, adhkar counts, app settings, recitation recordings, the marks on each recording, grades and teacher comments.</li>
 <li><b>Class links:</b> which teacher a student has joined with a class code.</li>
+<li><b>Teacher applications:</b> if you apply to teach, the details you give (languages, experience, ijazah, bio, availability and an optional WhatsApp number). Approved teachers' profile cards are shown to signed-in users; the phone number is seen only by academy admins.</li>
+<li><b>Teacher requests:</b> if you ask for a teacher, the student's name, languages, age group and notes, seen by academy admins and the teacher you are matched with.</li>
 </ul>
 <h2>Who can see it</h2>
 <p>Your recordings and marks are kept in private storage. Only you and a teacher you have joined can open them. A teacher can see the plan progress of students who joined their class. You can leave a teacher’s class at any time in Settings.</p>
@@ -269,7 +293,7 @@ for path, content in pages.items():
     open(path, 'w').write(content)
 
 urls = [('/', 1.0, [('en', '/'), ('ar', '/ar/')]), ('/about/', 0.9, [('en', '/about/'), ('ar', '/ar/')]), ('/faq/', 0.9, [('en', '/faq/'), ('ar', '/ar/')]),
-        ('/ar/', 0.9, [('en', '/about/'), ('ar', '/ar/')]), ('/privacy/', 0.3, []), ('/terms/', 0.3, [])]
+        ('/ar/', 0.9, [('en', '/about/'), ('ar', '/ar/')]), ('/teach/', 0.8, []), ('/privacy/', 0.3, []), ('/terms/', 0.3, [])]
 sm = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']
 for u, pr, alts in urls:
     sm.append(f'  <url><loc>{SITE}{u}</loc><lastmod>{TODAY}</lastmod><priority>{pr}</priority>' + ''.join(f'<xhtml:link rel="alternate" hreflang="{h}" href="{SITE}{a}"/>' for h, a in alts) + '</url>')
@@ -308,6 +332,7 @@ open('llms.txt', 'w').write(f'''# Recite With Me (رتّل معي)
 - [About]({SITE}/about/): what the app does for students, teachers and parents
 - [FAQ]({SITE}/faq/): short answers about the AI check, teacher sessions, reports, prayer times and privacy
 - [العربية]({SITE}/ar/): Arabic overview and FAQ
+- [Teach with us]({SITE}/teach/): how Quran teachers apply and how students are matched by language
 - [Privacy]({SITE}/privacy/) · [Terms]({SITE}/terms/)
 - [Open the app]({SITE}/)
 

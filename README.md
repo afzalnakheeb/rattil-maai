@@ -55,3 +55,12 @@ Tests:
 ## Deploy
 
 Every push to `main` deploys to rattilmai.com through Vercel. No build step is needed.
+
+
+## Academy (admin panel)
+
+- **Teach with us** (`#/apply`, public page `/teach/`): teachers sign in with Google and apply with languages, gender, years of experience, ijazah, studies, bio, availability and an optional WhatsApp number (admins only).
+- **Find me a teacher** (`#/find-teacher`): a student asks for a teacher with their languages, teacher gender wish, age group and level.
+- **Admin panel** (`#/admin`): overview by language (teachers, free places, students waiting), application review (approve with a student limit, decline, note), teacher capacity and pause, and one-tap assignment of waiting students to the best-matching teachers (shared language, gender wish, free places, children).
+- Admins are listed by Google email in `private.admin_emails` (first admin: the owner). Every admin action is an admin-only database function; students and teachers cannot change statuses, grades or capacity themselves.
+- Migrations: `supabase/migrations/`. `20261029_PENDING_admin_unassign.sql` still needs to be run (it lets an admin remove a teacher-student link).

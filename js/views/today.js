@@ -118,7 +118,9 @@ export default function todayView(root) {
 async function fillTeacher(root) {
   let teachers = [];
   let calls = [];
+  let req = null;
   try { [teachers, calls] = await Promise.all([cloud.myTeachers(), cloud.openCalls()]); } catch { /* offline */ }
+  if (!teachers.length) { try { req = await cloud.myTeacherRequest(); } catch { /* table not ready or offline */ } }
   const card = root.querySelector('#teacherCard');
   if (!card) return;
   const me = cloud.user()?.id;
@@ -129,7 +131,10 @@ async function fillTeacher(root) {
   }
   card.innerHTML = `<h2>My teacher</h2>${teachers.length
     ? teachers.map((t) => `<div class="list-item">${avatar(t)}<div class="grow"><h3>${esc(t.name)}</h3><div class="xs muted">Sees your plan and recordings · calls you for video sessions</div></div></div>`).join('')
-    : `<p class="small muted">Enter your teacher's class code to join their class.</p>
+    : `${req && req.status === 'waiting'
+        ? '<div class="notice green">You asked the academy for a teacher. We will match you with one who speaks your language soon.</div><a class="btn sm outline" href="#/find-teacher" style="align-self:flex-start">See or change my request</a>'
+        : '<p class="small muted">No teacher yet? The academy matches you with a verified teacher who speaks your language.</p><a class="btn sm" href="#/find-teacher" style="align-self:flex-start">Find me a teacher</a>'}
+       <p class="xs muted" style="margin-top:6px">Already have a teacher? Enter their class code.</p>
        <form class="row" id="joinT"><label class="sr-only" for="tcode">Class code</label><input class="input grow code" id="tcode" maxlength="6" placeholder="CODE" autocomplete="off" required><button class="btn sm" type="submit">Join</button></form>`}`;
   card.querySelector('#joinT')?.addEventListener('submit', (e) => { e.preventDefault(); location.hash = `#/join/${card.querySelector('#tcode').value.trim().toUpperCase()}`; });
 }

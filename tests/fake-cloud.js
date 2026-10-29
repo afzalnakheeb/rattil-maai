@@ -79,3 +79,18 @@ export function room(callId) {
 }
 
 export async function iceServers() { return []; }
+
+// Academy
+export const amIAdmin = () => rpc('amIAdmin');
+export const myApplication = () => rpc('myApplication');
+export const submitApplication = (a) => rpc('submitApplication', a);
+export const listApplications = () => rpc('listApplications');
+export const reviewApplication = (id, d, n = '', c = 10) => rpc('reviewApplication', id, d, n, c);
+export const listTeachers = () => rpc('listTeachers');
+export const teacherProfile = (id) => rpc('teacherProfile', id);
+export const updateTeacher = (id, c, a) => rpc('updateTeacher', id, c, a);
+export const myTeacherRequest = () => rpc('myTeacherRequest');
+export const requestTeacher = (r) => rpc('requestTeacher', r);
+export const cancelTeacherRequest = () => rpc('cancelTeacherRequest');
+export const listRequests = () => rpc('listRequests');
+export const assignTeacher = (s, t) => rpc('assignTeacher', s, t);

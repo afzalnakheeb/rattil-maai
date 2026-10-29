@@ -17,6 +17,8 @@ import prayerView from './views/prayer.js';
 import duasView from './views/duas.js';
 import moreView from './views/more.js';
 import reportView from './views/report.js';
+import adminView from './views/admin.js';
+import { applyView, findTeacherView } from './views/apply.js';
 
 const view = document.getElementById('view');
 const tabbar = document.getElementById('tabbar');
@@ -35,7 +37,7 @@ const TABS = {
     ['', 'Home', 'home'], ['live', 'Session', 'video'], ['mushaf', 'Mushaf', 'book'], ['history', 'Recordings', 'clock'], ['more', 'More', 'grid'],
   ],
 };
-const MORE_ROUTES = ['more', 'adhkar', 'duas', 'history', 'settings', 'prayer', 'report'];
+const MORE_ROUTES = ['more', 'adhkar', 'duas', 'history', 'settings', 'prayer', 'report', 'admin', 'apply', 'find-teacher'];
 
 function parse() {
   const raw = location.hash.replace(/^#\/?/, '');
@@ -80,6 +82,8 @@ async function render() {
   if (!signedIn && !localAllowed()) {
     paintChrome(route, false);
     if (route === 'join' && id) { try { sessionStorage.setItem('rattil:join', id.toUpperCase()); } catch { /* ignore */ } }
+    // Come back to the teacher application or the admin panel after signing in.
+    if (['apply', 'admin', 'find-teacher'].includes(route)) { try { sessionStorage.setItem('rattil:after', route); } catch { /* ignore */ } }
     welcome(pg, { ...bootInfo, onLocal: () => { sessionStorage.setItem('rattil:local', '1'); render(); } });
     return;
   }
@@ -91,13 +95,16 @@ async function render() {
   }
   if (!s.profile?.role) {
     paintChrome(route, false);
-    rolePicker(pg, () => { location.hash = '#/'; render(); });
+    rolePicker(pg, () => { location.hash = '#/'; render(); }, { suggest: (() => { try { return sessionStorage.getItem('rattil:after') === 'apply' ? 'teacher' : ''; } catch { return ''; } })() });
     return;
   }
   if (signedIn) {
     let pending = null;
     try { pending = sessionStorage.getItem('rattil:join'); } catch { /* ignore */ }
     if (pending) { sessionStorage.removeItem('rattil:join'); location.hash = `#/join/${pending}`; return; }
+    let after = null;
+    try { after = sessionStorage.getItem('rattil:after'); } catch { /* ignore */ }
+    if (after) { sessionStorage.removeItem('rattil:after'); if (after !== route) { location.hash = `#/${after}`; return; } }
   }
 
   paintChrome(route, true);
@@ -118,6 +125,9 @@ async function render() {
     case 'join': out = joinView(pg, { ...params, id }); break;
     case 'more': out = moreView(pg, params); break;
     case 'report': out = reportView(pg, params); break;
+    case 'admin': out = adminView(pg, params); break;
+    case 'apply': out = applyView(pg, params); break;
+    case 'find-teacher': out = findTeacherView(pg, params); break;
     case 'settings': out = settingsView(pg, params, ctx); break;
     default: pg.innerHTML = '<div class="empty card">Page not found. <a href="#/">Go home</a></div>';
   }

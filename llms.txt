@@ -6,6 +6,7 @@
 - [About](https://rattilmai.com/about/): what the app does for students, teachers and parents
 - [FAQ](https://rattilmai.com/faq/): short answers about the AI check, teacher sessions, reports, prayer times and privacy
 - [العربية](https://rattilmai.com/ar/): Arabic overview and FAQ
+- [Teach with us](https://rattilmai.com/teach/): how Quran teachers apply and how students are matched by language
 - [Privacy](https://rattilmai.com/privacy/) · [Terms](https://rattilmai.com/terms/)
 - [Open the app](https://rattilmai.com/)
 
@@ -30,4 +31,5 @@
 - **Do I need an account?** Students and teachers sign in with their Google account, so their progress, recordings and teacher stay with them on every device.
 - **Does it work on iPhone and Android?** Yes, in the browser on any phone, tablet or computer. Add it to your home screen to use it full screen like an app. The AI recitation check needs Chrome, Edge or Safari.
 - **How are prayer times and the Qibla calculated?** Prayer times are calculated on your device using the method of your country, such as Umm al-Qura (Saudi Arabia), the UAE Awqaf method with its 3-minute precautions, the Muslim World League, Egypt, Karachi or ISNA, with Standard or Hanafi Asr. You can adjust each prayer by minutes to match your mosque. The Qibla direction uses the great-circle bearing to the Kaaba, with a live compass on phones. Your location stays on your device.
+- **How do I get a teacher, and can I teach?** Students can ask the academy for a teacher in the app (Find me a teacher). They choose their languages and, if they wish, a male or female teacher, and the academy matches them with a verified teacher who speaks that language. Quran teachers from any country can apply at rattilmai.com/teach/ with their languages, years of experience and ijazah.
 - **Is my data private?** Recordings are kept in private storage and can be opened only by you and the teacher you joined. The app has no advertising and does not sell data. Video calls connect the two devices directly and are encrypted.
