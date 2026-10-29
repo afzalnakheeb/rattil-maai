@@ -552,17 +552,19 @@ try {
   await ap.click('#roleForm button[type=submit]');
   await ap.waitForSelector('#appForm');
   check('After sign-in the teacher lands on the application form', true);
-  await ap.click('#appForm input[name="gender"][value="female"]', { force: true });
+  await ap.click('#appForm label:has(input[name="gender"][value="female"])');
   await ap.fill('#aYears', '12');
   await ap.fill('#aCountry', 'Pakistan');
-  for (const l of ['ur', 'en']) await ap.check(`#appForm input[name="lang"][value="${l}"]`);
+  await ap.click('#appForm label:has(input[name="main"][value="ur"])');
+  await ap.click('#appForm label:has(input[name="lang"][value="en"])');
+  await ap.click('#appForm label:has(input[name="lang"][value="ar"])');
   await ap.check('#appForm input[name="teaches"][value="children"]');
   await ap.fill('#aIjazah', 'Ijazah in Hafs from Jamia Ashrafia, Lahore');
   await ap.fill('#aBio', 'I teach children and sisters with patience. <script>x</script>');
   await ap.fill('#aAvail', 'Weekdays after Asr (GMT+5)');
   await ap.click('#appForm button[type=submit]');
   await ap.waitForSelector('text=Under review');
-  check('Teacher application is sent and shows "Under review"', db.apps.length === 1 && db.apps[0].years_experience === 12 && [...db.apps[0].languages].sort().join() === 'en,ur', JSON.stringify(db.apps[0] || {}).slice(0, 160));
+  check('Teacher application is sent and shows "Under review"', db.apps.length === 1 && db.apps[0].years_experience === 12 && db.apps[0].languages.join() === 'ur,ar,en', JSON.stringify(db.apps[0] || {}).slice(0, 160));
   await shot(ap, '40-apply');
   check('No sideways scrolling on the application form', await noOverflow(ap));
 
@@ -577,13 +579,15 @@ try {
   check('Today offers "Find me a teacher" when there is no teacher', true);
   await sp.click('#teacherCard a[href="#/find-teacher"]');
   await sp.waitForSelector('#reqForm');
-  await sp.check('#reqForm input[name="lang"][value="ur"]');
-  await sp.click('#reqForm input[name="tg"][value="female"]', { force: true });
-  await sp.click('#reqForm input[name="age"][value="child"]', { force: true });
+  check('Find-a-teacher asks the mother tongue first', /speak best/.test(await sp.textContent('#reqForm')));
+  await sp.click('#reqForm label:has(input[name="main"][value="ur"])');
+  await sp.click('#reqForm label:has(input[name="lang"][value="en"])');
+  await sp.click('#reqForm label:has(input[name="tg"][value="female"])');
+  await sp.click('#reqForm label:has(input[name="age"][value="child"])');
   await sp.fill('#rLevel', 'Reads Qaida');
   await sp.click('#reqForm button[type=submit]');
   await sp.waitForSelector('text=You are on the list');
-  check('Student request is saved with language and teacher gender', db.requests[0]?.languages?.[0] === 'ur' && db.requests[0]?.teacher_gender === 'female');
+  check('Student request is saved with language and teacher gender', db.requests[0]?.languages?.join() === 'ur,en' && db.requests[0]?.teacher_gender === 'female');
 
   const adm = await newPage({ width: 1280, height: 860 }, { email: 'admin@gmail.com', name: 'Afzal' });
   await adm.goto(BASE + '#/admin');
@@ -621,6 +625,27 @@ try {
   check('Teacher card shows 1 of 8 students', /1 of 8 students/.test(await adm.textContent('.teacher-card')));
   check('No sideways scrolling on the admin panel', await noOverflow(adm));
 
+  const sp2 = await newPage({ width: 390, height: 844 }, { email: 'bilal.student@gmail.com', name: 'Bilal' });
+  await sp2.goto(BASE); await sp2.click('#google'); await sp2.waitForSelector('#roleForm'); await sp2.click('#roleForm button[type=submit]');
+  await sp2.waitForSelector('#planForm'); await sp2.click('#planForm button[type=submit]');
+  await sp2.goto(BASE + '#/find-teacher'); await sp2.waitForSelector('#reqForm');
+  await sp2.click('#reqForm label:has(input[name="main"][value="other"])');
+  await sp2.selectOption('#reqForm select[name="main-other"]', 'ta');
+  check('Other mother tongue: no teacher yet message', /No verified teacher speaks Tamil yet/.test(await sp2.textContent('#tPreview')));
+  await sp2.click('#reqForm label:has(input[name="main"][value="ur"])');
+  await sp2.waitForSelector('#tPreview .teacher-pick');
+  check('Student sees verified teachers who speak their language', /Maryam Khan/.test(await sp2.textContent('#tPreview')) && /Urdu is their mother tongue/.test(await sp2.textContent('#tPreview')));
+  await sp2.click('#tPreview .teacher-pick input', { force: true });
+  await sp2.locator('#reqForm').scrollIntoViewIfNeeded();
+  await sp2.screenshot({ path: path.join(OUT, '43-find-teacher.png'), fullPage: true });
+  await sp2.click('#reqForm button[type=submit]');
+  await sp2.waitForSelector('text=You are on the list');
+  const bilalReq = db.requests.find((r) => r.student_name === 'Bilal');
+  check('Student can choose a preferred teacher', !!bilalReq?.preferred_teacher && bilalReq.languages[0] === 'ur');
+  await adm.goto(BASE + '#/admin?tab=students');
+  await adm.waitForSelector('text=Student chose this teacher');
+  check('Admin sees the student\'s chosen teacher and mother-tongue match', /Speaks best: Urdu/.test(await adm.textContent('#pane')) && /Same mother tongue/.test(await adm.textContent('#pane')));
+  await sp2.context().close();
   await sp.goto(BASE + '#/');
   await sp.waitForSelector('#teacherCard .list-item');
   check('Student now sees the assigned teacher on Today', /Maryam Khan/.test(await sp.textContent('#teacherCard')));
@@ -669,7 +694,7 @@ try {
   await hp.context().close();
   await Promise.all([ap.context().close(), sp.context().close(), adm.context().close()]);
 } catch (e) {
-  check('Run finished without exceptions', false, String(e).split('\n')[0]);
+  check('Run finished without exceptions', false, String(e).split('\n').slice(0, 4).join(' | '));
 } finally {
   await browser.close();
   server.close();

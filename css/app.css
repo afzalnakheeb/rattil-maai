@@ -561,3 +561,19 @@ audio { width: 100%; }
 .text-red { color: var(--red-ink, var(--red)); }
 .load { display: flex; flex-direction: column; gap: 6px; }
 .teacher-card h3 { font-size: 16.5px; }
+.main-lang { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.pick.big { min-height: 58px; align-items: flex-start; }
+.pick.big > span { display: flex; flex-direction: column; gap: 2px; }
+.pick.big b { font-size: 15.5px; }
+.teacher-pick > span { display: block; }
+.text-gold { color: var(--gold-ink, var(--gold)); }
+.more-langs summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--primary); padding: 8px 0; min-height: 44px; display: flex; align-items: center; }
+.more-langs[open] summary { margin-bottom: 8px; }
+.main-lang .pick.big select { width: 100%; }
+.pill-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { display: inline-flex; cursor: pointer; }
+.pill input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pill span { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid var(--line-2); background: var(--card); font-size: 14px; }
+.pill input:checked + span { border-color: var(--primary); background: var(--green-tint); color: var(--green); font-weight: 600; }
+.pill input:checked + span::before { content: '✓'; }
+.pill input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }

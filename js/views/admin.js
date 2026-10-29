@@ -100,7 +100,7 @@ export default async function adminView(root, params) {
             <div><span>Country</span><b>${esc(a.country || '—')}</b></div>
             <div><span>Hours / week</span><b>${a.hours_per_week}</b></div>
           </div>
-          <div class="row-wrap">${a.languages.map((l) => `<span class="chip plain">${esc(langName(l))}</span>`).join('')}</div>
+          <div class="row-wrap">${a.languages.map((l, i) => `<span class="chip ${i === 0 ? '' : 'plain'}">${i === 0 ? 'Mother tongue: ' : ''}${esc(langName(l))}</span>`).join('')}</div>
           ${a.teaches.length ? `<p class="xs muted">Teaches: ${a.teaches.map((k) => esc((TEACHES.find((x) => x[0] === k) || [k, k])[1])).join(' · ')}</p>` : ''}
           ${a.ijazah ? `<p class="small"><b>Ijazah:</b> ${esc(a.ijazah)}</p>` : ''}
           ${a.qualifications ? `<p class="small"><b>Studies:</b> ${esc(a.qualifications)}</p>` : ''}
@@ -150,13 +150,13 @@ export default async function adminView(root, params) {
         <div class="card stack-s" data-req="${esc(r.student_id)}">
           <div class="spread"><div><h3>${esc(r.student_name || 'Student')}</h3><div class="xs muted">${esc(r.email)} · waiting since ${esc(when(r.created_at))}</div></div>
             <span class="chip gold">${AGE[r.age_group]}</span></div>
-          <div class="row-wrap">${r.languages.map((l, i) => `<span class="chip ${i === 0 ? '' : 'plain'}">${esc(langName(l))}</span>`).join('')}${r.teacher_gender !== 'any' ? `<span class="chip plain">${r.teacher_gender === 'female' ? 'Female teacher' : 'Male teacher'}</span>` : ''}</div>
+          <div class="row-wrap">${r.languages.map((l, i) => `<span class="chip ${i === 0 ? '' : 'plain'}">${i === 0 ? 'Speaks best: ' : ''}${esc(langName(l))}</span>`).join('')}${r.teacher_gender !== 'any' ? `<span class="chip plain">${r.teacher_gender === 'female' ? 'Female teacher' : 'Male teacher'}</span>` : ''}</div>
           ${r.level ? `<p class="small"><b>Level:</b> ${esc(r.level)}</p>` : ''}
           ${r.note ? `<p class="small"><b>Note:</b> ${esc(r.note)}</p>` : ''}
           <div class="eyebrow">Best matches</div>
           ${matches.length ? matches.map((m) => `
             <div class="list-item"><div class="grow"><h3 style="font-size:15px">${esc(m.teacher.name)}</h3>
-              <div class="xs muted">${m.shared.map((l) => esc(langName(l))).join(', ')} · ${m.teacher.years_experience} yrs · ${m.teacher.students}/${m.teacher.capacity} students${m.room ? '' : ' · <span class="text-red">full or paused</span>'}</div></div>
+              <div class="xs muted">${m.chosen ? '<b class="text-gold">Student chose this teacher</b> · ' : ''}${m.sameMother ? `Same mother tongue (${esc(langName(r.languages[0]))})` : m.speaksMain ? `Teaches in ${esc(langName(r.languages[0]))}` : `Shares ${m.shared.map((l) => esc(langName(l))).join(', ')}`} · ${m.teacher.years_experience} yrs · ${m.teacher.students}/${m.teacher.capacity} students${m.room ? '' : ' · <span class="text-red">full or paused</span>'}</div></div>
               <button class="btn sm ${m.room ? '' : 'outline'}" type="button" data-assign="${esc(m.teacher.user_id)}">Assign</button></div>`).join('')
             : `<p class="small text-red">No verified teacher speaks ${esc(r.languages.map(langName).join(' or '))}${r.teacher_gender !== 'any' ? ` (${r.teacher_gender})` : ''} yet.</p>`}
         </div>`;

@@ -169,21 +169,28 @@ export function cleanRequest(r) {
     level: str(r.level, 80), note: str(r.note, 500),
     status: oneOf(r.status, ['waiting', 'assigned', 'cancelled'], 'waiting'),
     teacher_id: r.teacher_id ? id(r.teacher_id) : null,
+    preferred_teacher: r.preferred_teacher ? id(r.preferred_teacher) : null,
     created_at: str(r.created_at, 40), assigned_at: r.assigned_at ? str(r.assigned_at, 40) : null,
   };
 }
 
-// Best teachers for a student: speaks their language, matches the gender wish, has room, fewer students first.
+// Best teachers for a student. languages[0] is the mother tongue on both sides.
+// Order: the teacher the student chose, then same mother tongue, then teaches in the student's
+// main language, then any shared language; must match the gender wish; room and fewer students first.
 export function matchTeachers(req, teachers) {
+  const main = req.languages[0];
   return teachers
     .map((t) => {
       const shared = t.languages.filter((l) => req.languages.includes(l));
       const room = t.accepting && t.students < t.capacity;
       const genderOk = req.teacher_gender === 'any' || req.teacher_gender === t.gender;
       const kids = req.age_group === 'child' ? (t.teaches.includes('children') ? 1 : 0) : 0;
-      const score = (shared.length ? 100 : 0) + (genderOk ? 40 : -100) + (room ? 30 : -60) + kids * 10
-        + (shared[0] === req.languages[0] ? 15 : 0) - (t.capacity ? (t.students / t.capacity) * 20 : 20);
-      return { teacher: t, shared, room, genderOk, score };
+      const sameMother = !!main && t.languages[0] === main;
+      const speaksMain = !!main && t.languages.includes(main);
+      const chosen = req.preferred_teacher && req.preferred_teacher === t.user_id;
+      const score = (chosen ? 300 : 0) + (sameMother ? 120 : 0) + (speaksMain ? 80 : 0) + (shared.length ? 40 : 0)
+        + (genderOk ? 40 : -100) + (room ? 30 : -60) + kids * 10 - (t.capacity ? (t.students / t.capacity) * 20 : 20);
+      return { teacher: t, shared, room, genderOk, sameMother, speaksMain, chosen, score };
     })
     .filter((m) => m.shared.length && m.genderOk)
     .sort((a, b) => b.score - a.score);
