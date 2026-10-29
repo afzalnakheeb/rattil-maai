@@ -65,9 +65,9 @@ export default async function reciteView(root, params) {
       </div>
       <div class="card" id="wordsCard"></div>
       <div class="legend">
-        <span><i style="background:var(--green-hl);border-bottom:2px solid var(--green)"></i>Reciting now</span>
-        <span><i style="background:var(--red-tint);border-bottom:2px solid var(--red)"></i>Mistake</span>
-        <span><i style="background:#F1ECE0"></i>Peeked</span>
+        <span><i class="lg-now"></i>Reciting now</span>
+        <span><i class="lg-bad"></i>Mistake</span>
+        <span><i class="lg-peek"></i>Peeked</span>
       </div>
       <div id="result"></div>
       <div class="dock" id="dock">
@@ -191,7 +191,7 @@ export default async function reciteView(root, params) {
     stopFix(false);
     const blob = await session.stop();
     const st = store.get();
-    const saved = await session.save({ kind: 'practice', student: st.profile?.name, planItem: pick.planItem, blob });
+    const saved = await session.save({ kind: 'practice', student: st.profile?.name, studentId: st.meta?.uid ? st.profile?.id : null, planItem: pick.planItem, blob });
     const score = session.aiScore();
     let planMsg = '';
     if (pick.planItem && st.plan) {

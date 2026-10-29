@@ -1,8 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Recite With Me">
-  <rect width="512" height="512" rx="112" fill="#2A7458"/>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2E7D5F"/>
+      <stop offset="1" stop-color="#164C3A"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EAD6A0"/>
+      <stop offset="1" stop-color="#C29E4E"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
   <g transform="translate(256 256) scale(0.84) translate(-256 -207.5)">
-    <path d="M114 338V240A227.2 227.2 0 0 1 256 29.4A227.2 227.2 0 0 1 398 240V338H206L160 386V338Z" fill="none" stroke="#C9A85F" stroke-width="32" stroke-linejoin="round"/>
-    <g fill="#F6F3EC">
+    <path d="M114 338V240A227.2 227.2 0 0 1 256 29.4A227.2 227.2 0 0 1 398 240V338H206L160 386V338Z" fill="none" stroke="url(#gold)" stroke-width="32" stroke-linejoin="round"/>
+    <g fill="#F7F3EA">
       <rect x="198" y="222" width="30" height="80" rx="15"/>
       <rect x="241" y="196" width="30" height="132" rx="15"/>
       <rect x="284" y="222" width="30" height="80" rx="15"/>

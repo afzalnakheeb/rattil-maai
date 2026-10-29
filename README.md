@@ -13,15 +13,27 @@ A Quran memorization web app to the standard of Masjid al-Haram and Masjid an-Na
 - **Adhkar:** morning, evening, after-prayer and sleep adhkar, with a tap counter (1/3, 2/3, 3/3) and recitation audio.
 - **History:** every recording with its marks. Tap a mark to hear that moment, and share a summary.
 
+- **Prayer:** prayer times for your city (Umm al-Qura, Dubai/Awqaf, Egypt, Karachi, ISNA, MWL and more) and a Qibla compass.
+- **Duas and Ruqyah:** short and full Ruqyah, and a Hisn al-Muslim duas library. Quranic text always comes from the API.
+
 **Teacher view (same app)**
-- Keep a student list.
-- Run in-person live sessions: the page follows the recitation, AI suggestions appear, and the teacher confirms them, dismisses them or adds marks.
-- The whole session is recorded.
+- A class code. Students who join appear with their plan and streak.
+- **Free video sessions:** the AI runs on the student's phone, the teacher sees its marks live, confirms them or adds their own, and the whole call (both voices) is recorded.
+- In-person sessions on the teacher's device for students without an account.
+- Review and grade a student's AI practice.
 - Grade with the 4-part rubric (hifz 40, tajweed 30, makharij 20, waqf 10), add a comment, and choose pass or repeat.
+
+**Accounts:** students and teachers sign in with Google. Progress, recordings, marks and grades sync across devices.
+
+## How it is built
+
+- Static ES-module web app, no build step, hosted on Vercel from `main`.
+- Supabase project `rattilmai` (eu-central-1): Google Auth, Postgres with row-level security (profiles, links, user_state, sessions, reviews, calls), private `recordings` storage, Realtime.
+- Video calls: WebRTC directly between the two devices, encrypted (DTLS-SRTP). Signalling and live marks go over a private Realtime channel that only the two people on the call can join. The `ice-servers` Edge Function returns STUN, plus Cloudflare TURN relays when `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN` secrets are set.
+- Light and dark themes share one set of colour tokens in `css/app.css`.
 
 ## Limits of this version
 
-- **Data stays on one device.** It is saved in the browser (localStorage, plus IndexedDB for audio). Accounts, cloud sync, parent access and online video sessions are next.
 - **The AI check needs a supported browser.** It uses the browser's speech engine: Chrome, Edge or Safari, in Arabic. It checks words only, not tajweed. Without a speech engine, students tap the words they got wrong.
 
 ## Content sources (free)
@@ -35,8 +47,11 @@ A Quran memorization web app to the standard of Masjid al-Haram and Masjid an-Na
 
 Serve the folder with any static server, for example `python3 -m http.server`. Then open `http://localhost:8000`.
 
-Run the browser test: `node tests/e2e.mjs`. It needs Playwright. The Quran API, audio and speech engine are simulated.
+Tests:
+- `node tests/e2e.mjs` runs 43 browser checks with Playwright: Google sign-in, cloud sync, a real WebRTC video call between two browser windows, reviews and themes. The Quran API, audio, speech engine and cloud (`tests/fake-cloud.js`) are simulated.
+- `node tests/prayer.test.mjs` checks prayer times and Qibla.
+- `node tests/duas.test.mjs` checks the duas data.
 
 ## Deploy
 
-The site is static, so GitHub Pages serves the `main` branch root as-is. No build step is needed.
+Every push to `main` deploys to rattilmai.com through Vercel. No build step is needed.

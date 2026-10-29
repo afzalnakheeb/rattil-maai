@@ -4,6 +4,28 @@ import { describePortions } from '../quran.js';
 import { esc, todayKey } from '../ui.js';
 import { icons } from '../icons.js';
 import { SETS, ADHKAR } from '../adhkar.js';
+import * as cloud from '../cloud.js';
+import { isCloud } from '../account.js';
+import { computeTimes, nextPrayer, tzOffsetHours } from '../prayer.js';
+import { avatar } from './teacher.js';
+
+function nextPrayerLine(settings) {
+  const p = settings.prayer;
+  if (!p || typeof p.lat !== 'number') return '';
+  try {
+    const now = new Date();
+    const tz = p.tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const opts = { method: p.method || 'mwl', asr: p.asr || 'standard' };
+    const t = computeTimes(now, p.lat, p.lng, tzOffsetHours(tz, now), opts);
+    const tm = new Date(now.getTime() + 864e5);
+    const t2 = computeTimes(tm, p.lat, p.lng, tzOffsetHours(tz, tm), opts);
+    const n = nextPrayer(t, now, t2);
+    if (!n) return '';
+    const mins = Math.max(0, Math.round(n.ms / 60000));
+    const left = mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`;
+    return `${n.en} at ${n.time.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tz })} · in ${left}`;
+  } catch { return ''; }
+}
 
 const ITEMS = [
   { key: 'sabaq', title: 'New lesson · Sabaq', icon: 'book', tile: 'solid', minutes: 30 },
@@ -31,15 +53,17 @@ export default function todayView(root) {
 
   root.innerHTML = `
     <div class="stack">
-      <div class="page-head">
-        <div class="small muted">${new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-        <h1>${esc(greet)}, ${esc(s.profile?.name || '')}</h1>
-      </div>
-      <div class="stats">
-        <div class="stat"><b>${s.streak.count || 0} ${s.streak.count === 1 ? 'day' : 'days'}</b><span>Streak</span></div>
-        <div class="stat"><b>${t.memorizedCount} ${t.memorizedCount === 1 ? 'page' : 'pages'}</b><span>Memorized</span></div>
-        <div class="stat"><b>${esc(plan.level(s.plan).short)}</b><span>Each day</span></div>
-      </div>
+      <section class="hero">
+        <div class="eyebrow">${new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        <h1 style="margin-top:4px">${esc(greet)}, ${esc((s.profile?.name || '').split(' ')[0])}</h1>
+        <a class="small" href="#/prayer" style="color:var(--gold-2);text-decoration:none;display:inline-flex;gap:6px;align-items:center;margin-top:4px">${icons.moon.replace('<svg', '<svg width="15" height="15"')}<span>${esc(nextPrayerLine(s.settings) || 'Set your city for prayer times')}</span></a>
+        <div class="hero-stats">
+          <div><b>${s.streak.count || 0}</b><span>${s.streak.count === 1 ? 'Day streak' : 'Days streak'}</span></div>
+          <div><b>${t.memorizedCount}</b><span>${t.memorizedCount === 1 ? 'Page memorized' : 'Pages memorized'}</span></div>
+          <div><b>${esc(plan.level(s.plan).short)}</b><span>Each day</span></div>
+        </div>
+      </section>
+      <div id="liveNow"></div>
       ${t.complete ? `<div class="card gold stack-s"><h2>You have completed the whole Quran. Allahumma barik.</h2><p class="small">Keep your manzil every day so it stays strong.</p></div>` : ''}
       <div class="card stack">
         <div class="spread"><h2>Today's plan</h2><span class="small muted">${doneCount} of ${items.length} done</span></div>
@@ -65,6 +89,11 @@ export default function todayView(root) {
             <div class="grow"><h3>Daily adhkar</h3><div class="small muted">${adhkarDone.length ? `Completed today: ${esc(adhkarDone.join(', '))}` : 'Morning, evening, after prayer and sleep'}</div></div>
             <a class="btn outline sm" href="#/adhkar">Open</a>
           </div>
+          <div class="list-item">
+            <div class="icon-tile gold">${icons.hands}</div>
+            <div class="grow"><h3>Duas and Ruqyah</h3><div class="small muted">Short and full Ruqyah, duas for every moment</div></div>
+            <a class="btn outline sm" href="#/duas">Open</a>
+          </div>
         </div>
         <p class="xs muted">Recite each part with the AI and reach 90% to tick it off. The new lesson moves forward once it is done.</p>
       </div>
@@ -73,11 +102,31 @@ export default function todayView(root) {
         <p>${t.complete ? 'Hifz complete.' : `At this pace you complete the Quran around <b>${esc(finish)}</b>, in sha Allah.`}</p>
         <p class="small muted">Track: ${esc(plan.TRACKS.find((x) => x.id === s.plan.track)?.label || '')}. Change it in Settings.</p>
       </div>
-      <div class="card stack-s">
-        <h2>Teacher test</h2>
-        <p class="small muted">When your portion is ready, show your teacher. In a halaqa, the teacher opens <b>Live session</b> on their device and listens to you recite; the session is recorded with every mark.</p>
+      <div class="card stack-s" id="teacherCard">
+        <h2>My teacher</h2>
+        ${isCloud() ? '<div class="spinner"></div>' : `<p class="small muted">Sign in with Google to join your teacher's class. Your teacher can then review your practice and call you for video sessions.</p><div><a class="btn sm" href="#/signin">Sign in with Google</a></div>`}
       </div>
     </div>`;
+  if (isCloud()) fillTeacher(root);
+}
+
+async function fillTeacher(root) {
+  let teachers = [];
+  let calls = [];
+  try { [teachers, calls] = await Promise.all([cloud.myTeachers(), cloud.openCalls()]); } catch { /* offline */ }
+  const card = root.querySelector('#teacherCard');
+  if (!card) return;
+  const me = cloud.user()?.id;
+  const live = calls.find((c) => c.student_id === me && c.status !== 'ended');
+  const liveBox = root.querySelector('#liveNow');
+  if (live && liveBox) {
+    liveBox.innerHTML = `<div class="card row" style="border:1.5px solid var(--gold)">${avatar(live.teacher || {}, 46)}<div class="grow"><h3>${esc(live.teacher?.name || 'Your teacher')} is waiting</h3><div class="xs muted">Video session · page ${(live.portions || []).map((p) => p.page).join(', ')}</div></div><a class="btn sm" href="#/call/${live.id}">${icons.video} Join</a></div>`;
+  }
+  card.innerHTML = `<h2>My teacher</h2>${teachers.length
+    ? teachers.map((t) => `<div class="list-item">${avatar(t)}<div class="grow"><h3>${esc(t.name)}</h3><div class="xs muted">Sees your plan and recordings · calls you for video sessions</div></div></div>`).join('')
+    : `<p class="small muted">Enter your teacher's class code to join their class.</p>
+       <form class="row" id="joinT"><label class="sr-only" for="tcode">Class code</label><input class="input grow code" id="tcode" maxlength="6" placeholder="CODE" autocomplete="off" required><button class="btn sm" type="submit">Join</button></form>`}`;
+  card.querySelector('#joinT')?.addEventListener('submit', (e) => { e.preventDefault(); location.hash = `#/join/${card.querySelector('#tcode').value.trim().toUpperCase()}`; });
 }
 
 export function setupPlan(root, { onDone } = {}) {

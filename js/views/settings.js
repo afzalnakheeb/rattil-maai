@@ -1,56 +1,160 @@
 import * as store from '../store.js';
 import * as plan from '../plan.js';
+import * as cloud from '../cloud.js';
+import * as account from '../account.js';
 import { RECITERS } from '../quran.js';
-import { esc, toast } from '../ui.js';
+import { esc, toast, loading } from '../ui.js';
+import { icons } from '../icons.js';
+import { avatar } from './teacher.js';
+import { applyTheme } from '../theme.js';
+import { SITE_URL } from '../config.js';
 
-export function welcome(root, onDone) {
-  root.innerHTML = `
-    <form class="stack welcome" id="welcomeForm">
+const GOOGLE_G = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+
+const FEATURES = [
+  ['book', 'A daily hifz plan', 'New lesson, recent revision and old revision, every day.'],
+  ['mic', 'An AI that listens', 'Recite from memory; it follows word by word and plays the correct word when you slip.'],
+  ['video', 'Live sessions with your teacher', 'Free video calls. Your teacher sees the AI’s marks, adds their own and grades you.'],
+  ['moon', 'Adhkar, duas and prayer times', 'Morning and evening adhkar, Ruqyah, duas, salah times and the Qibla.'],
+];
+
+function brandBlock() {
+  return `
       <div class="logo-big">
-        <img src="icons/icon.svg" alt="" width="96" height="96" style="border-radius:24px">
-        <h1 style="font-size:28px">Recite With Me</h1>
-        <p class="small muted">Rattil Ma'i · <span lang="ar" dir="rtl" style="font-family:'IBM Plex Sans Arabic',sans-serif;font-weight:600;color:var(--green)">رتّل معي</span> · means "Recite With Me"</p>
-        <p class="muted">Memorize the Quran with a daily plan, an AI that listens as you recite, and teachers who check you, to the standard of al-Haram and an-Nabawi.</p>
+        <img src="icons/icon.svg" alt="" width="104" height="104">
+        <span class="wordmark-en">Recite With Me</span>
+        <span class="wordmark-ar" lang="ar">رتّل معي</span>
+        <div class="ornament" aria-hidden="true">${icons.star.replace('<svg', '<svg width="12" height="12"')}</div>
+        <p class="muted tagline">Memorize the Quran to the standard of al-Haram and an-Nabawi, with a daily plan, an AI that listens, and teachers who check you.</p>
+      </div>`;
+}
+
+// Signed-out entry. Google sign-in is the way in; device-only mode exists only until Google is switched on.
+export function welcome(root, { googleReady, cloudReady, onLocal }) {
+  const err = cloud.lastUrlError();
+  root.innerHTML = `
+    <div class="stack welcome">
+      ${brandBlock()}
+      ${err ? `<div class="notice red">${esc(err)}</div>` : ''}
+      <div class="card stack">
+        <div class="stack-s">
+          <h2>Join with your Google account</h2>
+          <p class="small muted">Students and teachers sign in with Gmail, so your progress, recordings and teacher stay with you on every device.</p>
+        </div>
+        <button class="btn-google" id="google" type="button" ${googleReady ? '' : 'disabled'}>${GOOGLE_G} Continue with Google</button>
+        ${googleReady ? '' : `<p class="xs muted" style="text-align:center">${cloudReady ? 'Google sign-in is being switched on. You can start on this device and sign in later; everything moves to your account.' : 'You seem to be offline. You can start on this device now.'}</p>`}
+        ${googleReady ? '' : '<button class="btn ghost block" id="local" type="button">Start on this device for now</button>'}
       </div>
+      <div class="card stack-s feature-list">
+        ${FEATURES.map(([ic, t, d]) => `<div class="row"><div class="icon-tile">${icons[ic]}</div><div class="grow"><h3>${t}</h3><p class="small muted">${d}</p></div></div>`).join('')}
+      </div>
+      <p class="xs muted" style="text-align:center">Free. Hafs ʿan ʿĀṣim · Madinah Mushaf.<br>Rattil Maʿī · <span lang="ar">رتّل معي</span> means “Recite With Me”.</p>
+    </div>`;
+  root.querySelector('#google').addEventListener('click', async (e) => {
+    const b = e.currentTarget;
+    b.disabled = true;
+    b.innerHTML = `<span class="spinner sm"></span> Opening Google…`;
+    try { await cloud.signInWithGoogle(); } catch (x) {
+      console.error(x);
+      toast('Google sign-in could not open. Try again in a moment.');
+      b.disabled = false; b.innerHTML = `${GOOGLE_G} Continue with Google`;
+    }
+  });
+  root.querySelector('#local')?.addEventListener('click', () => onLocal());
+}
+
+// After sign-in (or device-only start) when no role is chosen yet.
+export function rolePicker(root, onDone) {
+  const s = store.get();
+  root.innerHTML = `
+    <form class="stack welcome" id="roleForm">
+      ${brandBlock()}
       <div class="card stack-s">
-        <label class="label" for="nm">Your name</label>
-        <input class="input" id="nm" required maxlength="40" autocomplete="given-name" placeholder="e.g. Yusuf">
+        ${s.profile?.id ? `<div class="row">${avatar(s.profile)}<div class="grow"><h3>${esc(s.profile.name)}</h3><div class="xs muted">${esc(s.profile.email || '')}</div></div></div>`
+          : `<label class="label" for="nm">Your name</label><input class="input" id="nm" required maxlength="40" autocomplete="given-name" placeholder="e.g. Yusuf">`}
       </div>
       <fieldset class="card stack-s" style="border:0;margin:0">
         <legend class="label" style="padding:0;margin-bottom:8px">I am a…</legend>
-        <label class="choice"><input type="radio" name="role" value="student" checked><span><b>Student</b><br><span class="small muted">Daily plan, listen, recite with the AI check, adhkar and my recordings</span></span></label>
-        <label class="choice"><input type="radio" name="role" value="teacher"><span><b>Teacher</b><br><span class="small muted">My students, live sessions with AI suggestions, grading and recordings</span></span></label>
+        <label class="choice"><input type="radio" name="role" value="student" checked><span><b>Student</b><br><span class="small muted">Daily plan, listen, recite with the AI check, video sessions with my teacher, adhkar</span></span></label>
+        <label class="choice"><input type="radio" name="role" value="teacher"><span><b>Teacher</b><br><span class="small muted">My students, video and in-person sessions with AI suggestions, grading and recordings</span></span></label>
       </fieldset>
-      <button class="btn block" type="submit">Continue</button>
-      <p class="xs muted" style="text-align:center">Free. Your data stays on this device for now.</p>
+      <button class="btn block lg" type="submit">Continue</button>
     </form>`;
-  root.querySelector('#welcomeForm').addEventListener('submit', (e) => {
+  root.querySelector('#roleForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = root.querySelector('#nm').value.trim();
     const role = new FormData(e.currentTarget).get('role');
-    store.update((s) => { s.profile = { name, role }; });
-    onDone();
+    const nm = root.querySelector('#nm');
+    try {
+      if (nm) store.update((x) => { x.profile = { ...(x.profile || {}), name: nm.value.trim() }; });
+      await account.setRole(role);
+      onDone();
+    } catch { toast('Could not save. Check your connection and try again.'); }
   });
+}
+
+// #/join/CODE: a student opens the teacher's invite link.
+export async function joinView(root, params) {
+  const code = (params.id || '').toUpperCase();
+  if (!account.isCloud()) {
+    try { sessionStorage.setItem('rattil:join', code); } catch { /* ignore */ }
+    root.innerHTML = `<div class="empty card stack-s"><h2>Sign in to join this class</h2><p class="small muted">Class code <b>${esc(code)}</b> will be used after you sign in with Google.</p><div><a class="btn sm" href="#/">Continue</a></div></div>`;
+    return;
+  }
+  root.innerHTML = loading('Joining the class');
+  try {
+    const t = await cloud.joinTeacher(code);
+    if (store.get().profile?.role !== 'student') await account.setRole('student');
+    root.innerHTML = `<div class="card stack-s"><h2>You joined ${esc(t.name)}’s class</h2><p class="small muted">Your teacher can now see your plan and recordings, review your practice and call you for video sessions.</p><div><a class="btn sm" href="#/">Go to Today</a></div></div>`;
+  } catch (e) {
+    root.innerHTML = `<div class="notice red stack-s"><p>${esc(/own code/.test(e.message) ? 'This is your own class code.' : 'No teacher has this code. Check it and try again.')}</p><div><a class="btn sm" href="#/settings">Enter a code</a></div></div>`;
+  }
 }
 
 export default function settingsView(root, params, { rerender }) {
   const s = store.get();
   const p = s.plan;
+  const cloudOn = account.isCloud();
+  const isTeacher = s.profile?.role === 'teacher';
+  const theme = s.settings.theme || 'system';
   root.innerHTML = `
     <div class="stack">
       <div class="page-head"><h1>Settings</h1></div>
-      <form class="card stack-s" id="profileForm">
-        <h2>Profile</h2>
-        <div class="field"><label for="nm">Name</label><input class="input" id="nm" value="${esc(s.profile?.name || '')}" maxlength="40" required></div>
-        <div class="field"><span class="label">View</span>
-          <div class="seg" role="group" aria-label="View">
-            <button type="button" data-role="student" aria-pressed="${s.profile?.role !== 'teacher'}">Student</button>
-            <button type="button" data-role="teacher" aria-pressed="${s.profile?.role === 'teacher'}">Teacher</button>
-          </div>
-          <p class="xs muted">One app, two views. Teachers use the Teacher view; students the Student view.</p>
+      <div class="card stack-s">
+        <h2>Account</h2>
+        ${cloudOn ? `
+          <div class="row">${avatar(s.profile)}<div class="grow"><h3>${esc(s.profile.name)}</h3><div class="xs muted">${esc(s.profile.email || '')} · signed in with Google</div></div></div>
+          <form class="row" id="nameForm"><label class="sr-only" for="nm">Display name</label><input class="input grow" id="nm" value="${esc(s.profile?.name || '')}" maxlength="40" required><button class="btn sm" type="submit">Save</button></form>
+          <button class="btn ghost sm" id="signOut" type="button" style="align-self:flex-start">${icons.logout} Sign out</button>`
+        : `<p class="small muted">You are using Recite With Me on this device only. Sign in with Google to keep your progress and recordings in your account and to join a teacher.</p>
+          <a class="btn sm" href="#/signin" style="align-self:flex-start">Sign in with Google</a>`}
+      </div>
+      ${cloudOn && isTeacher ? `
+      <div class="card stack-s">
+        <h2>Class code</h2>
+        <div class="code-box"><b>${esc(s.profile.code || '')}</b><button class="icon-btn" id="copyCode" type="button" aria-label="Copy invite link">${icons.copy}</button></div>
+        <p class="xs muted">Students enter this code, or open ${esc(SITE_URL.replace('https://', ''))}/#/join/${esc(s.profile.code || '')}</p>
+      </div>` : ''}
+      ${cloudOn && !isTeacher ? `
+      <div class="card stack-s">
+        <h2>My teachers</h2>
+        <div id="teachers">${loading()}</div>
+        <form class="row" id="joinForm" style="margin-top:4px"><label class="sr-only" for="code">Class code</label><input class="input grow code" id="code" maxlength="6" placeholder="CODE" autocomplete="off" autocapitalize="characters" required><button class="btn sm" type="submit">Join</button></form>
+        <p class="xs muted">Ask your teacher for their 6-letter class code.</p>
+      </div>` : ''}
+      <div class="card stack-s">
+        <h2>Appearance</h2>
+        <div class="seg full three" role="group" aria-label="Theme">
+          ${[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => `<button type="button" data-theme-opt="${k}" aria-pressed="${theme === k}">${l}</button>`).join('')}
         </div>
-        <button class="btn sm" type="submit" style="align-self:flex-start">Save name</button>
-      </form>
+      </div>
+      <div class="card stack-s">
+        <h2>View</h2>
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" data-role="student" aria-pressed="${!isTeacher}">Student</button>
+          <button type="button" data-role="teacher" aria-pressed="${isTeacher}">Teacher</button>
+        </div>
+        <p class="xs muted">One app, two views. Teachers use the Teacher view; students the Student view.</p>
+      </div>
       <div class="card stack-s">
         <h2>Listening</h2>
         <div class="field"><label for="rec">Default reciter</label>
@@ -66,24 +170,52 @@ export default function settingsView(root, params, { rerender }) {
       </div>
       <div class="card stack-s">
         <h2>About</h2>
-        <p class="small">Recite With Me · رتّل معي. Quran text: Tanzil Uthmani (Madinah Mushaf, Hafs), via Al Quran Cloud. Recitations: Islamic Network CDN. Adhkar: Hisn al-Muslim.</p>
-        <p class="small muted">The AI check uses your browser's speech engine. It checks words, not tajweed, and never replaces a teacher.</p>
+        <p class="small">Recite With Me · <span lang="ar">رتّل معي</span>. Quran text: Tanzil Uthmani (Madinah Mushaf, Hafs), via Al Quran Cloud. Recitations: Islamic Network CDN. Adhkar and duas: Hisn al-Muslim.</p>
+        <p class="small muted">The AI check uses your browser's speech engine. It checks words, not tajweed, and never replaces a teacher. Video calls connect your two devices directly and are encrypted.</p>
       </div>
-      <div class="card stack-s">
+      ${!cloudOn ? `<div class="card stack-s">
         <h2>Data on this device</h2>
         <p class="small muted">${s.history.length} recordings saved. Clearing removes everything on this device.</p>
         <button class="btn danger sm" id="clear" type="button" style="align-self:flex-start">Clear all data</button>
-      </div>
+      </div>` : ''}
     </div>`;
 
-  root.querySelector('#profileForm').addEventListener('submit', (e) => {
+  root.querySelector('#nameForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    store.update((x) => { x.profile.name = root.querySelector('#nm').value.trim(); });
-    toast('Saved');
-    rerender();
+    try { await account.setName(root.querySelector('#nm').value.trim()); toast('Saved'); rerender(); } catch { toast('Could not save. Check your connection.'); }
   });
-  root.querySelectorAll('[data-role]').forEach((b) => b.addEventListener('click', () => {
-    store.update((x) => { x.profile.role = b.dataset.role; });
+  root.querySelector('#signOut')?.addEventListener('click', async () => {
+    if (!confirm('Sign out on this device? Your progress and recordings stay in your account.')) return;
+    await account.signOut();
+    location.hash = '#/';
+    location.reload();
+  });
+  root.querySelector('#copyCode')?.addEventListener('click', async () => {
+    const link = `${SITE_URL}/#/join/${s.profile.code}`;
+    try { await navigator.clipboard.writeText(link); toast('Invite link copied'); } catch { toast(link); }
+  });
+  if (root.querySelector('#teachers')) {
+    cloud.myTeachers().then((list) => {
+      const box = root.querySelector('#teachers');
+      if (!box) return;
+      box.innerHTML = list.length ? list.map((t) => `<div class="list-item">${avatar(t)}<div class="grow"><h3>${esc(t.name)}</h3><div class="xs muted">${esc(t.email || '')}</div></div><button class="btn ghost sm" type="button" data-leave="${t.id}">Leave</button></div>`).join('') : '<p class="small muted">Not linked to a teacher yet.</p>';
+      box.querySelectorAll('[data-leave]').forEach((b) => b.addEventListener('click', async () => {
+        if (!confirm('Leave this teacher’s class? They will no longer see your progress.')) return;
+        await cloud.unlink(b.dataset.leave, s.profile.id); rerender();
+      }));
+    }).catch(() => { const box = root.querySelector('#teachers'); if (box) box.innerHTML = '<p class="small muted">Could not load. Check your connection.</p>'; });
+  }
+  root.querySelector('#joinForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    location.hash = `#/join/${root.querySelector('#code').value.trim().toUpperCase()}`;
+  });
+  root.querySelectorAll('[data-theme-opt]').forEach((b) => b.addEventListener('click', () => {
+    store.update((x) => { x.settings.theme = b.dataset.themeOpt; });
+    applyTheme();
+    root.querySelectorAll('[data-theme-opt]').forEach((y) => y.setAttribute('aria-pressed', String(y === b)));
+  }));
+  root.querySelectorAll('[data-role]').forEach((b) => b.addEventListener('click', async () => {
+    try { await account.setRole(b.dataset.role); } catch { toast('Could not switch. Check your connection.'); return; }
     location.hash = '#/';
     rerender();
   }));
@@ -101,7 +233,7 @@ export default function settingsView(root, params, { rerender }) {
     store.update((x) => { x.plan = null; });
     location.hash = '#/';
   });
-  root.querySelector('#clear').addEventListener('click', () => {
+  root.querySelector('#clear')?.addEventListener('click', () => {
     if (!confirm('Clear all data on this device? This cannot be undone.')) return;
     store.reset();
     try { indexedDB.deleteDatabase('rattil-audio'); } catch { /* ignore */ }

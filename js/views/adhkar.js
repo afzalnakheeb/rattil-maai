@@ -78,8 +78,8 @@ export default async function adhkarView(root, params) {
         <div class="stack-s" style="align-items:center">
           <button class="counter" id="counter" type="button" aria-label="Count one. ${n} of ${d.count}">
             <svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true">
-              <circle cx="70" cy="70" r="60" fill="none" stroke="#EEEAE0" stroke-width="9"/>
-              <circle cx="70" cy="70" r="60" fill="none" stroke="${complete ? '#2A7458' : '#C9A85F'}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - pct)}" transform="rotate(-90 70 70)"/>
+              <circle class="ring-bg" cx="70" cy="70" r="60" fill="none" stroke-width="9"/>
+              <circle class="ring ${complete ? 'done' : ''}" cx="70" cy="70" r="60" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - pct)}" transform="rotate(-90 70 70)"/>
             </svg>
             <span class="num"><b>${n} / ${d.count}</b><span>${complete ? 'Done' : 'Tap after each'}</span></span>
           </button>

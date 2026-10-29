@@ -4,28 +4,45 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Recite With Me</title>
-<meta name="description" content="Memorize the Quran to the standard of al-Haram and an-Nabawi: daily plan, listen, recite with an AI check, adhkar, and teacher sessions.">
-<meta name="theme-color" content="#2A7458">
+<meta name="description" content="Memorize the Quran to the standard of al-Haram and an-Nabawi: daily plan, listen, recite with an AI check, live video sessions with your teacher, adhkar, duas and prayer times.">
+<meta name="theme-color" content="#F7F3EA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1411" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Recite With Me · رتّل معي">
+<meta property="og:description" content="Memorize the Quran with a daily plan, an AI that listens, and live sessions with your teacher.">
+<meta property="og:image" content="https://rattilmai.com/icons/icon-512.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-small.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<script>
+  // Apply the saved theme before the first paint (System / Light / Dark).
+  try {
+    var t = (JSON.parse(localStorage.getItem('rattil:v1') || '{}').settings || {}).theme;
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { /* storage blocked */ }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Amiri+Quran&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <div id="app" class="app">
   <header class="topbar">
     <a class="brand" href="#/" aria-label="Recite With Me home">
-      <img src="icons/icon-small.svg" alt="" width="34" height="34">
-      <span class="brand-name">Recite With Me</span>
+      <img src="icons/icon-small.svg" alt="" width="36" height="36">
+      <span class="brand-text">
+        <span class="brand-name">Recite With Me</span>
+        <span class="brand-ar" lang="ar">رتّل معي</span>
+      </span>
     </a>
-    <button class="role-chip" id="roleChip" type="button" aria-label="Switch role">Student</button>
+    <div class="top-actions">
+      <button class="role-chip" id="roleChip" type="button" aria-label="Account and settings" hidden>Student</button>
+    </div>
   </header>
   <main id="view" class="view" tabindex="-1" aria-live="polite"></main>
-  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+  <nav class="tabbar" id="tabbar" aria-label="Main" hidden></nav>
 </div>
+<div id="ring"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <noscript><p style="padding:24px">Recite With Me needs JavaScript to run.</p></noscript>
 <script type="module" src="js/app.js"></script>

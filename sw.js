@@ -1,11 +1,13 @@
 // Offline support: the app shell is cached; Quran text is cached as it is read.
-const VERSION = 'rwm-v2';
+const VERSION = 'rwm-v3';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-small.svg', 'icons/icon-192.png',
   'js/app.js', 'js/store.js', 'js/ui.js', 'js/icons.js', 'js/arabic.js', 'js/quran.js', 'js/plan.js', 'js/adhkar.js',
-  'js/speech.js', 'js/player.js', 'js/session.js',
+  'js/speech.js', 'js/player.js', 'js/session.js', 'js/config.js', 'js/cloud.js', 'js/account.js', 'js/records.js',
+  'js/call.js', 'js/theme.js', 'js/prayer.js', 'js/duas.js', 'icons/icon-512.png',
   'js/views/today.js', 'js/views/mushaf.js', 'js/views/recite.js', 'js/views/adhkar.js', 'js/views/history.js',
-  'js/views/teacher.js', 'js/views/settings.js', 'js/views/words.js',
+  'js/views/teacher.js', 'js/views/settings.js', 'js/views/words.js', 'js/views/call.js', 'js/views/prayer.js',
+  'js/views/duas.js', 'js/views/more.js',
 ];
 
 self.addEventListener('install', (e) => {
@@ -20,7 +22,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   // Quran text and fonts: cache first, refresh in the background.
-  if (url.hostname === 'api.alquran.cloud' || url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com')) {
+  if (url.hostname === 'api.alquran.cloud' || url.hostname === 'cdn.jsdelivr.net' || url.hostname === 'esm.sh' || url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com')) {
     e.respondWith(caches.open('rwm-data').then(async (c) => {
       const hit = await c.match(e.request);
       const net = fetch(e.request).then((r) => { if (r.ok) c.put(e.request, r.clone()); return r; }).catch(() => hit);

@@ -1,17 +1,18 @@
-// Everything is saved on this device (localStorage for records, IndexedDB for audio).
-// Accounts and cloud sync come later; the shapes here are what the server will store.
+// Local cache of everything (localStorage for records, IndexedDB for audio).
+// When signed in, progress syncs to the cloud (see sync.js) and sessions upload.
 
 const KEY = 'rattil:v1';
 
 const DEFAULTS = () => ({
-  profile: null,            // { role: 'student' | 'teacher', name }
+  profile: null,            // { role: 'student' | 'teacher', name, id?, email?, avatar? }
+  meta: { syncedAt: '', uid: '' },
   plan: null,               // { level, track, units, manzilCursor, created }
   daily: {},                // { 'YYYY-MM-DD': { sabaq, sabqi, manzil } }
   streak: { last: '', count: 0 },
   history: [],              // sessions, newest first
   adhkar: {},               // { 'YYYY-MM-DD:set': { id: count } }
   students: [],             // teacher's students: { id, name, note }
-  settings: { reciter: 'ar.husary', repeat: 1, speed: 1, hideText: true },
+  settings: { reciter: 'ar.husary', repeat: 1, speed: 1, hideText: true, theme: 'system' },
 });
 
 let state = load();
@@ -22,7 +23,7 @@ function load() {
     if (!raw) return DEFAULTS();
     const parsed = JSON.parse(raw);
     const d = DEFAULTS();
-    return { ...d, ...parsed, settings: { ...d.settings, ...(parsed.settings || {}) } };
+    return { ...d, ...parsed, meta: { ...d.meta, ...(parsed.meta || {}) }, settings: { ...d.settings, ...(parsed.settings || {}) } };
   } catch {
     return DEFAULTS();
   }
@@ -34,14 +35,40 @@ export function save() {
 
 export function get() { return state; }
 
-export function update(fn) {
+const listeners = new Set();
+export function onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+
+export function update(fn, { silent = false } = {}) {
   fn(state);
   save();
+  if (!silent) listeners.forEach((f) => { try { f(state); } catch { /* ignore */ } });
 }
 
 export function reset() {
   state = DEFAULTS();
   save();
+}
+
+// The part of the state that follows the user across devices.
+export const SYNC_KEYS = ['plan', 'daily', 'streak', 'adhkar', 'settings', 'students'];
+export function syncedSnapshot() {
+  const cutoff = Date.now() - 120 * 864e5;
+  const recent = (obj) => Object.fromEntries(Object.entries(obj || {}).filter(([k]) => {
+    const t = Date.parse(k.slice(0, 10));
+    return Number.isNaN(t) || t >= cutoff;
+  }));
+  const snap = {};
+  SYNC_KEYS.forEach((k) => { snap[k] = state[k]; });
+  snap.daily = recent(state.daily);
+  snap.adhkar = recent(state.adhkar);
+  return JSON.parse(JSON.stringify(snap));
+}
+export function applySynced(data) {
+  const d = DEFAULTS();
+  update((s) => {
+    SYNC_KEYS.forEach((k) => { if (data && k in data) s[k] = data[k]; });
+    s.settings = { ...d.settings, ...(s.settings || {}) };
+  }, { silent: true });
 }
 
 export function addSession(session) {

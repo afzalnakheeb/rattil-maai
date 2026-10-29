@@ -1,12 +1,12 @@
 {
   "name": "Recite With Me",
   "short_name": "Recite With Me",
-  "description": "Memorize the Quran with a daily plan, an AI recitation check, adhkar and teacher sessions.",
+  "description": "Memorize the Quran with a daily plan, an AI recitation check, live video sessions with your teacher, adhkar, duas and prayer times.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F6F3EC",
-  "theme_color": "#2A7458",
+  "background_color": "#F7F3EA",
+  "theme_color": "#1F6A50",
   "lang": "en",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },

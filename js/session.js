@@ -5,6 +5,7 @@ import { getPortions, describePortions } from './quran.js';
 import { Matcher } from './arabic.js';
 import { Listener, Recorder, speechSupported } from './speech.js';
 import * as store from './store.js';
+import * as records from './records.js';
 import { uid } from './ui.js';
 
 export const MARK_LABEL = {
@@ -17,8 +18,16 @@ export const MARK_LABEL = {
 };
 
 export class RecitationSession {
-  constructor({ portions, mode = 'practice', onUpdate = () => {}, onInterim = () => {}, onNotice = () => {}, onMistake = () => {} }) {
+  // listen: run the speech engine here. recordStream: record this stream instead of the microphone
+  // (the teacher records the mixed call audio). record: false to skip recording on this device.
+  constructor({ portions, mode = 'practice', listen = true, record = true, recordStream = null, onUpdate = () => {}, onInterim = () => {}, onNotice = () => {}, onMistake = () => {}, onProgress = () => {} }) {
     this.onMistake = onMistake;
+    this.onProgress = onProgress;
+    this.listen = listen;
+    this.record = record;
+    this.recordStream = recordStream;
+    this.viewMarks = null;
+    this.remoteRunning = false;
     this.portions = portions;
     this.mode = mode;
     this.onUpdate = onUpdate;
@@ -62,12 +71,14 @@ export class RecitationSession {
   async start() {
     if (this.running) return;
     this.running = true;
-    this.recording = await this.recorder.start();
+    if (this.record) {
+      this.recording = await this.recorder.start(this.recordStream);
+      if (!this.recording) this.onNotice('Recording is not available on this device; marks are still saved.');
+    }
     this.started = this.started || this.recorder.startedAt || Date.now();
-    if (!this.recording) this.onNotice('Recording is not available on this device; marks are still saved.');
-    if (speechSupported()) {
+    if (this.listen && speechSupported()) {
       this.listener = new Listener({
-        onFinal: (t) => { this.matcher.feed(t); this.onUpdate(); },
+        onFinal: (t) => { this.matcher.feed(t); this.onProgress(); this.onUpdate(); },
         onInterim: (t) => this.onInterim(t),
         onError: (err) => {
           if (err === 'not-allowed' || err === 'service-not-allowed') this.onNotice('Microphone permission was blocked. Allow the microphone for this site and try again.');
@@ -91,7 +102,7 @@ export class RecitationSession {
   _aiMark({ index, type, heard }) {
     const w = this.words[index];
     const mark = {
-      id: uid(), index, type, heard,
+      id: uid(), index, type, heard: heard || '',
       word: w.display, surah: w.surah, ayah: w.ayah,
       source: 'ai',
       status: this.mode === 'teacher' ? 'suggested' : 'final',
@@ -99,6 +110,41 @@ export class RecitationSession {
     };
     this.marks.push(mark);
     if (type !== 'extra') this.onMistake(mark);
+  }
+
+  // ---- Online sessions: the student's device listens; the teacher's mirrors it ----
+  progressPacket() {
+    const code = { pending: 'p', ok: 'o', wrong: 'w', skipped: 's' };
+    return { s: this.words.map((w) => code[w.status] || 'p').join(''), c: this.matcher.cursor, run: this.running };
+  }
+
+  applyProgress({ s = '', c = 0, run = false }) {
+    const status = { p: 'pending', o: 'ok', w: 'wrong', s: 'skipped' };
+    for (let i = 0; i < this.words.length && i < s.length; i++) this.words[i].status = status[s[i]] || 'pending';
+    this.matcher.cursor = Math.min(this.words.length, Math.max(0, c));
+    this.remoteRunning = !!run;
+    this.onUpdate();
+  }
+
+  addRemoteMark({ index, type, heard }) {
+    if (!(index >= 0 && index < this.words.length)) return;
+    const w = this.words[index];
+    const mark = { id: uid(), index, type, heard: heard || '', word: w.display, surah: w.surah, ayah: w.ayah, source: 'ai', status: 'suggested', t: this.elapsed() };
+    this.marks.push(mark);
+    if (type !== 'extra') this.onMistake(mark);
+    this.onUpdate();
+  }
+
+  marksPacket() {
+    return this.activeMarks().map((m) => ({ i: m.index, ty: m.type, so: m.source, st: m.status }));
+  }
+
+  applyMarks(list) {
+    this.viewMarks = (list || []).filter((m) => m.i >= 0 && m.i < this.words.length).map((m, k) => {
+      const w = this.words[m.i];
+      return { id: `v${k}`, index: m.i, type: m.ty, source: m.so, status: m.st, word: w.display, surah: w.surah, ayah: w.ayah, t: 0 };
+    });
+    this.onUpdate();
   }
 
   // Pause and resume both the AI listening and the recording.
@@ -151,7 +197,7 @@ export class RecitationSession {
 
   wordState(i) {
     const w = this.words[i];
-    const ms = this.marks.filter((m) => m.index === i && m.status !== 'dismissed');
+    const ms = (this.viewMarks || this.marks).filter((m) => m.index === i && m.status !== 'dismissed');
     const has = (fn) => ms.some(fn);
     const firm = has((m) => m.status === 'final' && m.type !== 'peek') || has((m) => m.status === 'confirmed');
     const suggested = has((m) => m.status === 'suggested');
@@ -159,13 +205,13 @@ export class RecitationSession {
     return {
       ok: w.status === 'ok',
       firm, suggested, peeked,
-      current: this.running && i === this.matcher.cursor,
+      current: (this.running || this.remoteRunning) && i === this.matcher.cursor,
       reached: w.status !== 'pending',
     };
   }
 
   activeMarks() {
-    return this.marks.filter((m) => m.status !== 'dismissed').sort((a, b) => a.index - b.index || a.t - b.t);
+    return (this.viewMarks || this.marks).filter((m) => m.status !== 'dismissed').sort((a, b) => a.index - b.index || a.t - b.t);
   }
 
   aiScore() { return this.matcher ? this.matcher.score() : 0; }
@@ -175,7 +221,7 @@ export class RecitationSession {
     return { reached, total: this.words.length };
   }
 
-  async save({ kind, student, teacher, grade, comment, decision, planItem, blob }) {
+  async save({ kind, student, teacher, studentId, teacherId, grade, comment, decision, planItem, blob, callId }) {
     const id = uid();
     let audioId = null;
     if (blob) {
@@ -190,9 +236,10 @@ export class RecitationSession {
       aiScore: this.aiScore(), words: this.words.length,
       marks: this.marks.map(({ id: mid, index, type, word, surah, ayah, source, status, t, heard }) => ({ id: mid, index, type, word, surah, ayah, source, status, t, heard })),
       grade: grade || null, comment: comment || '', decision: decision || '', planItem: planItem || '',
+      studentId: studentId || null, teacherId: teacherId || null, callId: callId || null,
+      ownerId: store.get().profile?.id || null,
       audioId,
     };
-    store.addSession(session);
-    return session;
+    return records.save(session, blob);
   }
 }

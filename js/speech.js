@@ -69,13 +69,17 @@ export class Recorder {
     this.startedAt = 0;
   }
 
-  async start() {
+  // stream: record an existing stream (e.g. the mixed call audio) instead of opening the microphone.
+  async start(stream = null) {
     this.startedAt = Date.now();
-    if (!recordingSupported()) return false;
+    if (!window.MediaRecorder || (!stream && !recordingSupported())) return false;
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      this.external = !!stream;
+      this.stream = stream || await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
       const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
-      this.mr = new MediaRecorder(this.stream, type ? { mimeType: type } : undefined);
+      const opts = { audioBitsPerSecond: 40000 };
+      if (type) opts.mimeType = type;
+      this.mr = new MediaRecorder(this.stream, opts);
       this.chunks = [];
       this.mr.ondataavailable = (e) => { if (e.data && e.data.size) this.chunks.push(e.data); };
       this.mr.start(1000);
@@ -92,7 +96,7 @@ export class Recorder {
   stop() {
     return new Promise((resolve) => {
       const done = () => {
-        if (this.stream) this.stream.getTracks().forEach((t) => t.stop());
+        if (this.stream && !this.external) this.stream.getTracks().forEach((t) => t.stop());
         this.stream = null;
         const blob = this.chunks.length ? new Blob(this.chunks, { type: this.chunks[0].type || 'audio/webm' }) : null;
         this.chunks = [];
