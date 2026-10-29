@@ -1,0 +1,3 @@
+-- Applied 30 Oct 2026 (open_teaching_test_phase). private.app_settings('open_teaching') = true during the test phase:
+-- private.is_approved_teacher() then allows any teacher to teach. Academy assignment still needs a real approval.
+-- Owners switch it in Admin panel -> Overview (public.admin_set_open_teaching).

@@ -90,7 +90,9 @@ function rowOut(r, uid) {
     review: rv ? { ...rv.data, teacherId: rv.teacher_id, teacher: prof(rv.teacher_id)?.name || '', updated: Date.parse(rv.updated_at) } : null, synced: true,
   };
 }
-const approvedTeacher = (uid) => db.teachers.some((t) => t.user_id === uid) && db.apps.some((a) => a.user_id === uid && a.status === 'approved');
+const reallyApproved = (uid) => db.teachers.some((t) => t.user_id === uid) && db.apps.some((a) => a.user_id === uid && a.status === 'approved');
+const settings = { open_teaching: false };
+const approvedTeacher = (uid) => settings.open_teaching || reallyApproved(uid);
 const visible = (r, uid) => r.owner_id === uid || r.student_id === uid || r.teacher_id === uid || teacherOf(uid, r.student_id);
 function callOut(c) { return { ...c, teacher: pub(prof(c.teacher_id)), student: pub(prof(c.student_id)) }; }
 
@@ -167,6 +169,8 @@ const api = {
     return true;
   },
   amIApprovedTeacher(ctx, uid) { return approvedTeacher(uid); },
+  academySettings() { return { ...settings }; },
+  setOpenTeaching(ctx, uid, [o]) { if (adminRole(uid) !== 'owner') return { __error: 'Only an owner can change this' }; settings.open_teaching = !!o; return true; },
   uploadRecitation(ctx, uid, [audio]) { const p = `${uid}/application-${Date.now()}.webm`; db.files[p] = audio; return p; },
   myApplication(ctx, uid) { return db.apps.find((x) => x.user_id === uid) || null; },
   submitApplication(ctx, uid, [a]) {
@@ -198,7 +202,7 @@ const api = {
   listRequests(ctx, uid) { if (!api.amIAdmin(ctx, uid)) return []; return db.requests.map((r) => ({ ...r, email: prof(r.student_id)?.email || '' })); },
   assignTeacher(ctx, uid, [s, t]) {
     if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' };
-    if (!approvedTeacher(t)) return { __error: 'Not an approved teacher' };
+    if (!reallyApproved(t)) return { __error: 'Not an approved teacher' };
     if (!teacherOf(t, s)) db.links.push({ teacher_id: t, student_id: s, created_at: iso() });
     const r = db.requests.find((x) => x.student_id === s); if (r) Object.assign(r, { status: 'assigned', teacher_id: t, assigned_at: iso() });
     return true;
@@ -731,6 +735,27 @@ try {
   await adm.waitForTimeout(600);
   check('The last owner cannot be removed', admins.some((x) => x.email === 'admin@gmail.com' && x.active && x.role === 'owner'));
   await hp.context().close();
+
+  // ---------- Test phase: the owner opens teaching before approval, then locks it again ----------
+  await adm.goto(BASE + '#/admin');
+  await adm.waitForSelector('#togglePhase');
+  await adm.click('#togglePhase');
+  await adm.waitForSelector('text=Test phase: teaching is open');
+  check('Owner opens teaching for the test phase', settings.open_teaching === true);
+  const zp = await newPage({ width: 390, height: 844 }, { email: 'zaid.teacher@gmail.com', name: 'Zaid' });
+  await zp.goto(BASE); await zp.click('#google'); await zp.waitForSelector('#roleForm');
+  await zp.click('#roleForm label:has(input[value="teacher"])'); await zp.click('#roleForm button[type=submit]');
+  await zp.waitForSelector('#appForm');
+  await zp.goto(BASE + '#/');
+  await zp.waitForSelector('text=Your class code');
+  check('In the test phase an unapproved teacher can teach', (await zp.locator('.locked-note').count()) === 0);
+  adm.once('dialog', (d) => d.accept());
+  await adm.click('#togglePhase');
+  await adm.waitForSelector('text=Teaching is locked to approved teachers');
+  await zp.goto(BASE + '#/mushaf'); await zp.goto(BASE + '#/');
+  await zp.waitForSelector('.locked-note');
+  check('Locking again closes teaching for unapproved teachers', settings.open_teaching === false);
+  await zp.context().close();
   await Promise.all([ap.context().close(), sp.context().close(), adm.context().close()]);
 } catch (e) {
   check('Run finished without exceptions', false, String(e).split('\n').slice(0, 4).join(' | '));

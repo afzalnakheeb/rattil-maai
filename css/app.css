@@ -586,3 +586,4 @@ audio { width: 100%; }
 .rec-live b { font-size: 20px; font-variant-numeric: tabular-nums; }
 .recitation-check { border-radius: 14px; padding: 12px; background: var(--gold-tint); display: flex; flex-direction: column; gap: 8px; }
 .recitation-check.missing { background: var(--red-tint); }
+.phase-card.open { border: 1.5px solid var(--gold); background: var(--gold-tint); }

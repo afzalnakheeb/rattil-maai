@@ -27,11 +27,11 @@ export default async function adminView(root, params) {
   let tab = TABS.some(([k]) => k === params.tab) ? params.tab : 'overview';
   let appFilter = 'pending';
   let langFilter = '';
-  let data = { apps: [], teachers: [], requests: [], admins: [] };
+  let data = { apps: [], teachers: [], requests: [], admins: [], settings: { open_teaching: false } };
 
   async function refresh() {
-    const [apps, teachers, requests, admins] = await Promise.all([cloud.listApplications(), cloud.listTeachers(), cloud.listRequests(), cloud.listAdmins().catch(() => [])]);
-    data = { apps, teachers, requests, admins };
+    const [apps, teachers, requests, admins, settings] = await Promise.all([cloud.listApplications(), cloud.listTeachers(), cloud.listRequests(), cloud.listAdmins().catch(() => []), cloud.academySettings().catch(() => ({ open_teaching: false }))]);
+    data = { apps, teachers, requests, admins, settings };
   }
 
   try { await refresh(); } catch (e) {
@@ -68,7 +68,15 @@ export default async function adminView(root, params) {
       seats: approved.filter((t) => t.languages.includes(c) && t.accepting).reduce((n, t) => n + Math.max(0, t.capacity - t.students), 0),
       waiting: waiting.filter((r) => r.languages.includes(c)).length,
     })).filter((x) => x.teachers || x.waiting);
+    const open = data.settings.open_teaching;
     return `
+      <div class="card stack-s phase-card ${open ? 'open' : ''}">
+        <div class="spread"><h2>${open ? 'Test phase: teaching is open' : 'Teaching is locked to approved teachers'}</h2><span class="chip ${open ? 'gold' : ''}">${open ? 'Open' : 'Locked'}</span></div>
+        <p class="small muted">${open
+          ? 'Any teacher who signs in can teach their own students with a class code before you approve them. Academy students are still assigned only to approved teachers.'
+          : 'Only teachers you approve (after their recitation test) can teach, take students or start video sessions.'}</p>
+        ${myRole === 'owner' ? `<button class="btn sm ${open ? '' : 'outline'}" type="button" id="togglePhase" style="align-self:flex-start">${open ? 'Lock: approved teachers only' : 'Open teaching for the test phase'}</button>` : '<p class="xs muted">Only an owner can change this.</p>'}
+      </div>
       <div class="stat-grid">
         <div class="stat"><b>${data.apps.filter((a) => a.status === 'pending').length}</b><span>Applications to review</span></div>
         <div class="stat"><b>${approved.length}</b><span>Verified teachers</span></div>
@@ -206,6 +214,11 @@ export default async function adminView(root, params) {
   }
 
   function wire() {
+    root.querySelector('#togglePhase')?.addEventListener('click', async () => {
+      const next = !data.settings.open_teaching;
+      if (!next && !confirm('Lock teaching to approved teachers? Teachers you have not approved will lose access to their class code, students and video sessions until you approve them.')) return;
+      try { await cloud.setOpenTeaching(next); await refresh(); toast(next ? 'Teaching is open for the test phase' : 'Teaching is now locked to approved teachers'); if (alive(root)) paint(); } catch (e) { toast(`Could not save: ${e?.message || 'check your connection'}`); }
+    });
     root.querySelectorAll('[data-listen]').forEach((b) => b.addEventListener('click', async () => {
       const wrap = b.closest('[data-audio]');
       b.disabled = true;

@@ -437,3 +437,14 @@ export async function uploadRecitation(blob) {
   check(await sb.storage.from('recordings').upload(path, blob, { contentType: type, upsert: false }));
   return path;
 }
+
+// ---- Academy settings (test phase: teachers may teach before approval) ----
+export async function academySettings() {
+  need();
+  const r = check(await sb.rpc('academy_settings')) || {};
+  return { open_teaching: !!r.open_teaching };
+}
+export async function setOpenTeaching(open) {
+  need();
+  check(await sb.rpc('admin_set_open_teaching', { is_open: !!open }));
+}

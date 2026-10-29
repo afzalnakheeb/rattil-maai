@@ -102,3 +102,5 @@ export async function uploadRecitation(blob) {
   const audio = { type: (blob.type || 'audio/webm').split(';')[0], size: blob.size, b64: await b64(blob) };
   return rpc('uploadRecitation', audio);
 }
+export const academySettings = () => rpc('academySettings');
+export const setOpenTeaching = (o) => rpc('setOpenTeaching', o);
