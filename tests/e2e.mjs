@@ -446,6 +446,24 @@ try {
   await dp.waitForTimeout(500);
   await shot(dp, '22-prayer-dark');
   check('No sideways scrolling on phone (dark)', await noOverflow(dp));
+  // Full screen button and bottom bar visibility
+  await dp.goto(BASE + '#/');
+  await dp.waitForSelector('#fsBtn');
+  check('Full-screen button is in the header', await dp.isVisible('#fsBtn'));
+  await dp.click('#fsBtn');
+  await dp.waitForTimeout(400);
+  const fsState = await dp.evaluate(() => ({ fs: !!document.fullscreenElement, sheet: !!document.querySelector('.sheet') }));
+  check('Full-screen button enters full screen (or shows install steps)', fsState.fs || fsState.sheet, JSON.stringify(fsState));
+  if (fsState.fs) {
+    check('Button switches to "Exit full screen"', (await dp.getAttribute('#fsBtn', 'aria-label')) === 'Exit full screen');
+    await dp.evaluate(() => document.exitFullscreen());
+    await dp.waitForTimeout(300);
+    check('Leaving full screen restores the button', (await dp.getAttribute('#fsBtn', 'aria-label')) === 'Full screen');
+  } else { await dp.keyboard.press('Escape'); }
+  await dp.setViewportSize({ width: 390, height: 560 });
+  await dp.waitForTimeout(200);
+  const barOk = await dp.evaluate(() => { const r = document.querySelector('#tabbar').getBoundingClientRect(); return r.height > 40 && r.bottom <= innerHeight + 1 && r.top < innerHeight; });
+  check('Bottom tab bar stays on screen on a short phone screen', barOk);
 } catch (e) {
   check('Run finished without exceptions', false, String(e).split('\n')[0]);
 } finally {

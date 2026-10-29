@@ -3,6 +3,7 @@ import * as cloud from './cloud.js';
 import * as account from './account.js';
 import { icons } from './icons.js';
 import { applyTheme } from './theme.js';
+import { initFullscreenButton, watchViewport } from './fullscreen.js';
 import { esc, loading } from './ui.js';
 import todayView from './views/today.js';
 import mushafView from './views/mushaf.js';
@@ -225,6 +226,8 @@ async function boot() {
 }
 
 roleChip.addEventListener('click', () => { location.hash = '#/settings'; });
+initFullscreenButton(document.getElementById('fsBtn'));
+watchViewport();
 window.addEventListener('hashchange', render);
 store.onChange(() => applyTheme());
 boot();
