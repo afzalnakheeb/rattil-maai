@@ -4,7 +4,7 @@ import { speechSupported } from '../speech.js';
 import * as store from '../store.js';
 import * as plan from '../plan.js';
 import { TOTAL_PAGES, audioUrl, wordAudioUrl } from '../quran.js';
-import { esc, loading, errorBox, toast, todayKey, fmtTime } from '../ui.js';
+import { esc, loading, errorBox, toast, todayKey, fmtTime, onLeave, alive } from '../ui.js';
 import { icons } from '../icons.js';
 
 function portionsFromParams(params) {
@@ -14,9 +14,11 @@ function portionsFromParams(params) {
     const list = t[params.plan] || [];
     return { portions: list, planItem: params.plan };
   }
-  const page = Math.min(TOTAL_PAGES, Math.max(1, parseInt(params.page, 10) || 0));
-  if (!page) return null;
-  return { portions: [{ page, part: params.part || 'all' }], planItem: '' };
+  const n = parseInt(params.page, 10);
+  if (!n) return null;
+  const page = Math.min(TOTAL_PAGES, Math.max(1, n));
+  const part = ['all', '1/2', '2/2'].includes(params.part) ? params.part : 'all';
+  return { portions: [{ page, part }], planItem: '' };
 }
 
 export default async function reciteView(root, params) {
@@ -40,13 +42,17 @@ export default async function reciteView(root, params) {
   });
   let fixAudio = null;
   let fixMark = null;
+  // Whatever happens next, leaving this page releases the microphone.
+  onLeave(root, () => { stopFix(false); if (!finished && session.started) session.stop(); });
   try {
     await session.load();
   } catch {
+    if (!alive(root)) return;
     root.innerHTML = errorBox('The verses could not load. Check your internet connection.', 'retry');
     root.querySelector('#retry')?.addEventListener('click', () => reciteView(root, params));
     return;
   }
+  if (!alive(root)) return;
 
   const listenHref = `#/mushaf?page=${pick.portions[0].page}&part=${pick.portions[0].part}&loops=5`;
   root.innerHTML = `
@@ -117,6 +123,7 @@ export default async function reciteView(root, params) {
       session.resume();
     } else {
       await session.start();
+      if (!alive(root)) session.stop();
     }
   });
 
@@ -187,6 +194,15 @@ export default async function reciteView(root, params) {
 
   async function finish() {
     if (finished) return;
+    const prog = session.progress();
+    if (supported && prog.reached === 0 && !session.marks.length) {
+      // Nothing recited yet: don't save an empty recording.
+      if (session.started) { await session.stop(); }
+      finished = true;
+      toast('Nothing was recited yet. Tap the microphone and recite from memory.');
+      reciteView(root, params);
+      return;
+    }
     finished = true;
     stopFix(false);
     const blob = await session.stop();
@@ -225,7 +241,7 @@ export default async function reciteView(root, params) {
           <div class="row"><button class="icon-btn" type="button" data-play="${m.index}" aria-label="Hear the correct recitation of ayah ${m.ayah}">${icons.play}</button>
           <span class="quran" style="font-size:21px" lang="ar">${esc(m.word)}</span>
           <span class="grow small">${esc(MARK_LABEL[m.type] || m.type)} · ayah ${m.ayah}${m.heard ? ` · heard «${esc(m.heard)}»` : ''}</span>
-          <span class="xs muted">${fmtTime(m.t)}</span></div>`).join('')}<p class="xs muted">Tap play to hear each ayah recited correctly.</p></div>` : '<p class="small muted">No mistakes found. MashaAllah.</p>'}
+          <span class="xs muted">${fmtTime(m.t)}</span></div>`).join('')}<p class="xs muted">Tap play to hear each ayah recited correctly.</p></div>` : (supported && prog.reached < prog.total ? `<p class="small muted">No mistakes in the ${prog.reached} of ${prog.total} words you recited. Finish the whole portion to complete it.</p>` : '<p class="small muted">No mistakes found. MashaAllah.</p>')}
         <div class="row-wrap">
           <a class="btn" href="#/recite?${new URLSearchParams(params).toString()}" id="again">Recite again</a>
           <a class="btn outline" href="#/history/${saved.id}">Replay recording</a>
@@ -242,7 +258,6 @@ export default async function reciteView(root, params) {
   }
 
   paint();
-  return () => { stopFix(false); if (!finished && session.running) session.stop(); };
 }
 
 function chooser(root) {

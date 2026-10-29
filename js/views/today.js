@@ -58,7 +58,7 @@ export default function todayView(root) {
         <h1 style="margin-top:4px">${esc(greet)}, ${esc((s.profile?.name || '').split(' ')[0])}</h1>
         <a class="small" href="#/prayer" style="color:var(--gold-2);text-decoration:none;display:inline-flex;gap:6px;align-items:center;margin-top:4px">${icons.moon.replace('<svg', '<svg width="15" height="15"')}<span>${esc(nextPrayerLine(s.settings) || 'Set your city for prayer times')}</span></a>
         <div class="hero-stats">
-          <div><b>${s.streak.count || 0}</b><span>${s.streak.count === 1 ? 'Day streak' : 'Days streak'}</span></div>
+          <div><b>${s.streak.count || 0}</b><span>Day streak</span></div>
           <div><b>${t.memorizedCount}</b><span>${t.memorizedCount === 1 ? 'Page memorized' : 'Pages memorized'}</span></div>
           <div><b>${esc(plan.level(s.plan).short)}</b><span>Each day</span></div>
         </div>
@@ -125,7 +125,7 @@ async function fillTeacher(root) {
   const live = calls.find((c) => c.student_id === me && c.status !== 'ended');
   const liveBox = root.querySelector('#liveNow');
   if (live && liveBox) {
-    liveBox.innerHTML = `<div class="card row" style="border:1.5px solid var(--gold)">${avatar(live.teacher || {}, 46)}<div class="grow"><h3>${esc(live.teacher?.name || 'Your teacher')} is waiting</h3><div class="xs muted">Video session · page ${(live.portions || []).map((p) => p.page).join(', ')}</div></div><a class="btn sm" href="#/call/${live.id}">${icons.video} Join</a></div>`;
+    liveBox.innerHTML = `<div class="card row" style="border:1.5px solid var(--gold)">${avatar(live.teacher || {}, 46)}<div class="grow"><h3>${esc(live.teacher?.name || 'Your teacher')} is waiting</h3><div class="xs muted">Video session · page ${(live.portions || []).map((p) => Number(p.page) || 1).join(', ')}</div></div><a class="btn sm" href="#/call/${encodeURIComponent(live.id)}">${icons.video} Join</a></div>`;
   }
   card.innerHTML = `<h2>My teacher</h2>${teachers.length
     ? teachers.map((t) => `<div class="list-item">${avatar(t)}<div class="grow"><h3>${esc(t.name)}</h3><div class="xs muted">Sees your plan and recordings · calls you for video sessions</div></div></div>`).join('')

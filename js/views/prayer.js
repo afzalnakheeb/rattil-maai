@@ -323,16 +323,18 @@ export default async function prayerView(root, params) { // eslint-disable-line 
       render();
     });
     root.querySelectorAll('[data-asr]').forEach((btn) => btn.addEventListener('click', () => { savePrayer({ asr: btn.dataset.asr }); render(); }));
-    const setAdj = (k, v) => {
+    const setAdj = (k, v, focusSel) => {
       const val = Math.max(-30, Math.min(30, Math.round(Number(v) || 0)));
       const offsets = { ...(cfg()?.offsets || {}), [k]: val };
       ui.adjustOpen = true;
       savePrayer({ offsets });
       render();
+      // Keep keyboard focus on the control that was used.
+      if (focusSel) root.querySelector(focusSel)?.focus();
     };
     root.querySelector('.prayer-adjust')?.addEventListener('toggle', (e) => { ui.adjustOpen = e.currentTarget.open; });
-    root.querySelectorAll('[data-adj]').forEach((inp) => inp.addEventListener('change', () => setAdj(inp.dataset.adj, inp.value)));
-    root.querySelectorAll('[data-step]').forEach((btn) => btn.addEventListener('click', () => setAdj(btn.dataset.step, (Number((cfg()?.offsets || {})[btn.dataset.step]) || 0) + Number(btn.dataset.d))));
+    root.querySelectorAll('[data-adj]').forEach((inp) => inp.addEventListener('change', () => setAdj(inp.dataset.adj, inp.value, `[data-adj="${inp.dataset.adj}"]`)));
+    root.querySelectorAll('[data-step]').forEach((btn) => btn.addEventListener('click', () => setAdj(btn.dataset.step, (Number((cfg()?.offsets || {})[btn.dataset.step]) || 0) + Number(btn.dataset.d), `[data-step="${btn.dataset.step}"][data-d="${btn.dataset.d}"]`)));
     root.querySelector('#pCompass')?.addEventListener('click', () => (compass.on ? stopCompass(true) : startCompass()));
   }
 

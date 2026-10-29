@@ -18,31 +18,45 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
 
-async function signedIn(req: Request): Promise<boolean> {
+// Returns the user's auth header if signed in, else null.
+async function signedIn(req: Request): Promise<{ auth: string; apikey: string } | null> {
   const auth = req.headers.get('authorization') || '';
   const apikey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') || '';
-  if (!auth.toLowerCase().startsWith('bearer ')) return false;
+  if (!auth.toLowerCase().startsWith('bearer ')) return null;
   try {
     const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/user`, { headers: { authorization: auth, apikey } });
-    if (!r.ok) return false;
+    if (!r.ok) return null;
     const u = await r.json();
-    return !!u?.id;
+    return u?.id ? { auth, apikey } : null;
+  } catch (_) { return null; }
+}
+
+// TURN relays (which cost money) only for someone in a live call. Row security limits the query to their own calls.
+async function inLiveCall(h: { auth: string; apikey: string }): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - 3 * 3600e3).toISOString();
+    const url = `${Deno.env.get('SUPABASE_URL')}/rest/v1/calls?select=id&status=in.(ringing,active)&created_at=gte.${encodeURIComponent(since)}&limit=1`;
+    const r = await fetch(url, { headers: { authorization: h.auth, apikey: h.apikey } });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    return Array.isArray(rows) && rows.length > 0;
   } catch (_) { return false; }
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  if (!(await signedIn(req))) return json({ error: 'sign-in required' }, 401);
+  const who = await signedIn(req);
+  if (!who) return json({ error: 'sign-in required' }, 401);
   const keyId = Deno.env.get('CF_TURN_KEY_ID');
   const token = Deno.env.get('CF_TURN_API_TOKEN');
   let iceServers: unknown[] = STUN;
   let relay = false;
-  if (keyId && token) {
+  if (keyId && token && (await inLiveCall(who))) {
     try {
       const r = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${keyId}/credentials/generate-ice-servers`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ttl: 14400 }),
+        body: JSON.stringify({ ttl: 10800 }),
       });
       if (r.ok) {
         const j = await r.json();

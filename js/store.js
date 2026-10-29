@@ -29,8 +29,12 @@ function load() {
   }
 }
 
+let warnedFull = false;
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage full or blocked */ }
+  try { localStorage.setItem(KEY, JSON.stringify(state)); warnedFull = false; } catch {
+    // Storage full or blocked: tell the user once rather than failing silently.
+    if (!warnedFull) { warnedFull = true; try { window.dispatchEvent(new CustomEvent('rattil:storage-full')); } catch { /* ignore */ } }
+  }
 }
 
 export function get() { return state; }
@@ -47,6 +51,7 @@ export function update(fn, { silent = false } = {}) {
 export function reset() {
   state = DEFAULTS();
   save();
+  listeners.forEach((f) => { try { f(state); } catch { /* ignore */ } });
 }
 
 // The part of the state that follows the user across devices.
@@ -61,20 +66,31 @@ export function syncedSnapshot() {
   SYNC_KEYS.forEach((k) => { snap[k] = state[k]; });
   snap.daily = recent(state.daily);
   snap.adhkar = recent(state.adhkar);
-  return JSON.parse(JSON.stringify(snap));
+  const out = JSON.parse(JSON.stringify(snap));
+  // Prayer location stays on this device: never sent to the cloud.
+  if (out.settings) delete out.settings.prayer;
+  return out;
 }
 export function applySynced(data) {
   const d = DEFAULTS();
   update((s) => {
+    const keepPrayer = s.settings?.prayer;
     SYNC_KEYS.forEach((k) => { if (data && k in data) s[k] = data[k]; });
     s.settings = { ...d.settings, ...(s.settings || {}) };
+    if (keepPrayer) s.settings.prayer = keepPrayer; else delete s.settings.prayer;
   }, { silent: true });
 }
 
 export function addSession(session) {
   update((s) => {
     s.history.unshift(session);
-    if (s.history.length > 300) s.history.length = 300;
+    // Keep the newest 300 on the device, but never drop one that has not uploaded yet.
+    if (s.history.length > 300) {
+      const keep = [], drop = [];
+      s.history.forEach((h, i) => ((i < 300 || !h.synced) ? keep : drop).push(h));
+      s.history = keep;
+      drop.forEach((h) => { if (h.audioId) deleteClip(h.audioId); });
+    }
   });
 }
 
@@ -91,15 +107,25 @@ export function touchStreak(day) {
 
 // ---- Audio clips in IndexedDB ----
 const DB = 'rattil-audio';
+let dbp = null;
 function db() {
-  return new Promise((resolve, reject) => {
+  if (dbp) return dbp;
+  dbp = new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) return reject(new Error('no-idb'));
     const req = indexedDB.open(DB, 1);
     req.onupgradeneeded = () => req.result.createObjectStore('clips');
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const d = req.result;
+      // Let sign-out delete the database: close when asked.
+      d.onversionchange = () => { d.close(); dbp = null; };
+      d.onclose = () => { dbp = null; };
+      resolve(d);
+    };
+    req.onerror = () => { dbp = null; reject(req.error); };
   });
+  return dbp;
 }
+export function closeDb() { if (dbp) dbp.then((d) => d.close()).catch(() => {}); dbp = null; }
 
 export async function putClip(id, blob) {
   try {

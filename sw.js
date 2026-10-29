@@ -1,5 +1,5 @@
 // Offline support: the app shell is cached; Quran text is cached as it is read.
-const VERSION = 'rwm-v10';
+const VERSION = 'rwm-v11';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-small.svg', 'icons/icon-192.png',
   'js/app.js', 'js/store.js', 'js/ui.js', 'js/icons.js', 'js/arabic.js', 'js/quran.js', 'js/plan.js', 'js/adhkar.js',
@@ -7,11 +7,12 @@ const SHELL = [
   'js/call.js', 'js/theme.js', 'js/fullscreen.js', 'js/report.js', 'js/views/report.js', 'js/prayer.js', 'js/duas.js', 'icons/icon-512.png', 'icons/wordmark-light.svg', 'icons/wordmark-dark.svg',
   'js/views/today.js', 'js/views/mushaf.js', 'js/views/recite.js', 'js/views/adhkar.js', 'js/views/history.js',
   'js/views/teacher.js', 'js/views/settings.js', 'js/views/words.js', 'js/views/call.js', 'js/views/prayer.js',
-  'js/views/duas.js', 'js/views/more.js',
+  'js/views/duas.js', 'js/views/more.js', 'js/clean.js', 'js/views/admin.js', 'js/views/apply.js',
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // Cache each file on its own, so one missing file cannot stop the update.
+  e.waitUntil(caches.open(VERSION).then((c) => Promise.all(SHELL.map((u) => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -30,12 +31,28 @@ self.addEventListener('fetch', (e) => {
     }));
     return;
   }
-  // App files: network first so updates arrive, cache when offline.
+  // App files: network first so updates arrive (with a short timeout on weak connections), cache when offline.
+  // Never cache sign-in redirects (?code=) or error responses.
   if (url.origin === location.origin) {
-    e.respondWith(fetch(e.request).then((r) => {
-      const copy = r.clone();
-      caches.open(VERSION).then((c) => c.put(e.request, copy));
-      return r;
-    }).catch(() => caches.match(e.request).then((r) => r || caches.match('index.html'))));
+    const cacheable = !url.search.includes('code=') && !url.search.includes('error=');
+    const isPage = e.request.mode === 'navigate';
+    e.respondWith((async () => {
+      const cached = await caches.match(e.request, { ignoreSearch: isPage });
+      const net = fetch(e.request).then((r) => {
+        if (r.ok && cacheable) { const copy = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); }
+        return r;
+      });
+      net.catch(() => {});
+      const timeout = new Promise((res) => setTimeout(() => res(null), cached ? 4000 : 15000));
+      try {
+        const r = await Promise.race([net, timeout]);
+        if (r) return r;
+        return cached || await net;
+      } catch {
+        if (cached) return cached;
+        if (isPage) return (await caches.match('index.html')) || Response.error();
+        return Response.error();
+      }
+    })());
   }
 });

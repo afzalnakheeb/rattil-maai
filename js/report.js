@@ -85,12 +85,14 @@ export function buildReport({ sessions = [], state = {}, kind = 'week', offset =
   const practice = list.filter((s) => s.kind === 'practice' && Number.isFinite(s.aiScore));
   const aiAvg = practice.length ? Math.round(practice.reduce((a, s) => a + s.aiScore, 0) / practice.length) : null;
   const graded = list.map((s) => {
-    const g = s.grade || s.review?.grade;
+    // A teacher's review outranks anything stored on the student's own row.
+    const rv = s.review?.grade ? s.review : null;
+    const g = rv ? rv.grade : s.grade;
     if (!g) return null;
     return {
-      id: s.id, created: s.created, title: s.title || '', kind: s.kind, total: g.total, grade: g,
-      decision: s.decision || s.review?.decision || '', comment: s.comment || s.review?.comment || '',
-      teacher: s.teacher || s.review?.teacher || '',
+      id: s.id, created: s.created, title: s.title || '', kind: s.kind, total: Number(g.total) || 0, grade: g,
+      decision: (rv ? rv.decision : s.decision) || '', comment: (rv ? rv.comment : s.comment) || '',
+      teacher: (rv ? rv.teacher : s.teacher) || s.teacher || '',
     };
   }).filter(Boolean).reverse();
   const gradeAvg = graded.length ? Math.round(graded.reduce((a, g) => a + g.total, 0) / graded.length) : null;

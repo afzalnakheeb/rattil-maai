@@ -1,13 +1,14 @@
 import { SETS, ADHKAR } from '../adhkar.js';
 import { getAyahs, audioUrl } from '../quran.js';
 import * as store from '../store.js';
-import { esc, arNum, todayKey, toast } from '../ui.js';
+import { esc, arNum, todayKey, toast, alive } from '../ui.js';
 import { icons } from '../icons.js';
 
 const CIRC = 2 * Math.PI * 60;
 
 export default async function adhkarView(root, params) {
   const defaultSet = (() => { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 20 ? 'evening' : 'sleep'; })();
+  let advance = null;
   let setId = SETS.some((x) => x.id === params.set) ? params.set : defaultSet;
   let idx = 0;
   let audio = null;
@@ -41,7 +42,7 @@ export default async function adhkarView(root, params) {
     if (b) { b.innerHTML = icons.pause; b.setAttribute('aria-label', 'Pause recitation'); }
     const next = () => {
       if (!playing || i >= ayahs.length) { stopAudio(); return; }
-      audio = new Audio(audioUrl('ar.alafasy', ayahs[i].number));
+      audio = new Audio(audioUrl(store.get().settings.reciter || 'ar.alafasy', ayahs[i].number));
       audio.onended = () => { i++; next(); };
       audio.onerror = () => { toast('Audio could not load.'); stopAudio(); };
       audio.play().catch(() => stopAudio());
@@ -104,7 +105,7 @@ export default async function adhkarView(root, params) {
       }).catch(() => { const el = root.querySelector('#dtext'); if (el) el.innerHTML = '<p class="small muted">Could not load the verses. Check your connection.</p>'; });
     }
 
-    root.querySelectorAll('[data-set]').forEach((b) => b.addEventListener('click', () => { setId = b.dataset.set; idx = firstOpen(); render(); }));
+    root.querySelectorAll('[data-set]').forEach((b) => b.addEventListener('click', () => { clearTimeout(advance); setId = b.dataset.set; idx = firstOpen(); render(); }));
     root.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { idx = +b.dataset.go; render(); }));
     root.querySelector('#prev').addEventListener('click', () => { idx = Math.max(0, idx - 1); render(); });
     root.querySelector('#next').addEventListener('click', () => { idx = Math.min(list().length - 1, idx + 1); render(); });
@@ -120,7 +121,11 @@ export default async function adhkarView(root, params) {
         const L2 = list();
         const all = L2.every((x) => (counts()[x.id] || 0) >= x.count);
         if (all) toast(`${SETS.find((x) => x.id === setId).label} adhkar complete. Allahumma barik.`);
-        else if (idx < L2.length - 1) { setTimeout(() => { idx = nextOpen(idx); render(); }, 450); }
+        else if (idx < L2.length - 1) {
+          clearTimeout(advance);
+          const fromSet = setId;
+          advance = setTimeout(() => { if (!alive(root) || setId !== fromSet) return; idx = nextOpen(idx); render(); }, 450);
+        }
       }
       render();
     });
@@ -140,5 +145,5 @@ export default async function adhkarView(root, params) {
 
   idx = firstOpen();
   render();
-  return () => stopAudio();
+  return () => { clearTimeout(advance); stopAudio(); };
 }

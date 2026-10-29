@@ -2,12 +2,15 @@
 // Works offline: the local store is always the working copy.
 
 import * as cloud from './cloud.js';
+import { cleanAvatar } from './clean.js';
 import * as store from './store.js';
 
 let mode = 'local';
 let profile = null;
 let pushTimer = null;
 let pushing = false;
+let pushAgain = false;
+let changeSeq = 0;
 let unsubscribeStore = null;
 
 export const isCloud = () => mode === 'cloud' && !!cloud.user();
@@ -37,7 +40,12 @@ export async function afterSignIn() {
   const before = store.get();
   const localRole = before.profile?.role || null;
   const firstLinkOfDevice = !before.meta.uid;
-  if (before.meta.uid && before.meta.uid !== u.id) store.reset(); // a different account on this device
+  if (before.meta.uid && before.meta.uid !== u.id) {
+    // A different account on this device: clear the previous person's data and audio.
+    store.reset();
+    store.closeDb();
+    try { indexedDB.deleteDatabase('rattil-audio'); } catch { /* ignore */ }
+  }
   mode = 'cloud';
   if (!profile.role && localRole && firstLinkOfDevice) {
     profile = await cloud.updateProfile({ role: localRole });
@@ -55,7 +63,7 @@ function applyProfile() {
       id: u.id,
       email: u.email || profile?.email || '',
       name: profile?.name || x.profile?.name || (u.email || '').split('@')[0],
-      avatar: profile?.avatar_url || '',
+      avatar: cleanAvatar(profile?.avatar_url),
       role: profile?.role || null,
       code: profile?.invite_code || '',
     };
@@ -73,8 +81,15 @@ export async function setName(name) {
   else store.update((x) => { x.profile.name = name; });
 }
 
-export async function signOut() {
+// Recordings not yet uploaded (they would be lost by signing out).
+export function unsyncedCount() { return store.get().history.filter((h) => !h.synced).length; }
+
+export async function signOut({ force = false } = {}) {
   clearTimeout(pushTimer);
+  if (isCloud()) {
+    try { await syncPending(); } catch { /* checked below */ }
+    if (!force && unsyncedCount()) { const e = new Error('unsynced'); e.count = unsyncedCount(); throw e; }
+  }
   if (isCloud() && store.get().meta.dirty) { try { await pushNow(); } catch { /* best effort */ } }
   await cloud.signOut();
   mode = 'local';
@@ -82,6 +97,7 @@ export async function signOut() {
   if (unsubscribeStore) { unsubscribeStore(); unsubscribeStore = null; }
   // Clear this device so the next person starts clean; audio stays in the cloud.
   store.reset();
+  store.closeDb();
   try { indexedDB.deleteDatabase('rattil-audio'); } catch { /* ignore */ }
 }
 
@@ -126,16 +142,22 @@ async function syncState() {
 function schedulePush() {
   if (!isCloud()) return;
   store.update((x) => { x.meta.dirty = true; }, { silent: true });
+  changeSeq += 1;
   clearTimeout(pushTimer);
   pushTimer = setTimeout(() => { pushNow().catch(() => {}); }, 1500);
 }
 
 async function pushNow() {
-  if (!isCloud() || pushing) return;
+  if (!isCloud()) return;
+  if (pushing) { pushAgain = true; return; } // a change arrived mid-push: push again after
   pushing = true;
   try {
-    const at = await cloud.pushState(store.syncedSnapshot());
-    store.update((x) => { x.meta.syncedAt = at; x.meta.dirty = false; }, { silent: true });
+    do {
+      pushAgain = false;
+      const seq = changeSeq;
+      const at = await cloud.pushState(store.syncedSnapshot());
+      store.update((x) => { x.meta.syncedAt = at; if (seq === changeSeq) x.meta.dirty = false; }, { silent: true });
+    } while (pushAgain);
   } finally { pushing = false; }
 }
 
@@ -149,7 +171,7 @@ export async function syncPending() {
     for (const h of pending.reverse()) {
       try {
         const blob = h.audioId ? await store.getClip(h.audioId) : null;
-        const row = { ...h, studentId: h.studentId || (h.kind === 'practice' ? cloud.user().id : null) };
+        const row = { ...h, studentId: h.studentId || (h.kind === 'practice' ? cloud.user().id : null), teacherId: h.kind === 'practice' ? null : cloud.user().id };
         const { audioPath } = await cloud.saveSession(row, blob);
         store.update((x) => {
           const it = x.history.find((y) => y.id === h.id);

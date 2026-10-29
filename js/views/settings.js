@@ -176,7 +176,7 @@ export default function settingsView(root, params, { rerender }) {
       </div>
       ${!cloudOn ? `<div class="card stack-s">
         <h2>Data on this device</h2>
-        <p class="small muted">${s.history.length} recordings saved. Clearing removes everything on this device.</p>
+        <p class="small muted">${s.history.length} ${s.history.length === 1 ? 'recording' : 'recordings'} saved. Clearing removes everything on this device.</p>
         <button class="btn danger sm" id="clear" type="button" style="align-self:flex-start">Clear all data</button>
       </div>` : ''}
     </div>`;
@@ -187,7 +187,14 @@ export default function settingsView(root, params, { rerender }) {
   });
   root.querySelector('#signOut')?.addEventListener('click', async () => {
     if (!confirm('Sign out on this device? Your progress and recordings stay in your account.')) return;
-    await account.signOut();
+    try {
+      await account.signOut();
+    } catch (e) {
+      if (e?.message !== 'unsynced') { toast('Could not sign out. Check your connection.'); return; }
+      const n = e.count;
+      if (!confirm(`${n} ${n === 1 ? 'recording has' : 'recordings have'} not uploaded yet (no connection). Signing out now deletes ${n === 1 ? 'it' : 'them'} from this device. Sign out anyway?`)) return;
+      await account.signOut({ force: true });
+    }
     location.hash = '#/';
     location.reload();
   });

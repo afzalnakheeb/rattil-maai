@@ -1,7 +1,7 @@
 import { getPage, getMeta, pageOf, juzStartPage, RECITERS, TOTAL_PAGES, slicePart } from '../quran.js';
 import { Player } from '../player.js';
 import * as store from '../store.js';
-import { esc, arNum, loading, errorBox, toast } from '../ui.js';
+import { esc, arNum, loading, errorBox, toast, alive, onLeave } from '../ui.js';
 import { icons } from '../icons.js';
 
 export function renderPage(ayahs, { dimOutside = null } = {}) {
@@ -105,15 +105,21 @@ export default async function mushafView(root, params) {
 
   const body = root.querySelector('#pageBody');
 
+  let loadToken = 0;
   async function load(p) {
+    const mine = ++loadToken;
     page = Math.min(TOTAL_PAGES, Math.max(1, p));
     store.update((st) => { st.settings.lastPage = page; });
     root.querySelector('#pgTitle').textContent = `Page ${page}`;
     root.querySelector('#pageInp').value = page;
     body.innerHTML = loading('Loading page');
     player.stop();
+    const st = root.querySelector('#plStatus');
+    if (st) st.textContent = 'Tap play, or tap any ayah to start from it.';
     try {
-      ayahs = await getPage(page);
+      const got = await getPage(page);
+      if (mine !== loadToken || !alive(root)) return; // a newer page was asked for
+      ayahs = got;
       const partAyahs = slicePart(ayahs, page === parseInt(params.page, 10) ? part : 'all');
       playList = partAyahs;
       const dim = partAyahs.length !== ayahs.length ? new Set(partAyahs.map((a) => a.number)) : null;
@@ -122,7 +128,10 @@ export default async function mushafView(root, params) {
       root.querySelector('#pgSub').textContent = `${first.surahEnglish} · Juz ${first.juz}${dim ? ` · ${part === '1/2' ? 'first' : 'second'} half` : ''}`;
       player.load(playList);
       if (meta) root.querySelector('#surahSel').value = String(first.surah);
+      const jz = root.querySelector('#juzSel');
+      if (jz) jz.value = String(first.juz);
     } catch {
+      if (mine !== loadToken || !alive(root)) return;
       body.innerHTML = errorBox('This page could not load. Check your internet connection.', 'retryPage');
       root.querySelector('#retryPage')?.addEventListener('click', () => load(page));
     }
@@ -174,6 +183,22 @@ export default async function mushafView(root, params) {
     root.querySelector('#juzSel').addEventListener('change', (e) => { if (e.target.value) load(juzStartPage(m, +e.target.value)); });
   }).catch(() => {});
 
+  // Swipe and arrow keys turn pages (right-to-left: swipe right or ArrowLeft = next page).
+  let sx = null, sy = 0;
+  body.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+  body.addEventListener('touchend', (e) => {
+    if (sx == null) return;
+    const t = e.changedTouches[0]; const dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) load(page + (dx > 0 ? 1 : -1));
+  }, { passive: true });
+  const onKey = (e) => {
+    if (!alive(root)) return;
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || '')) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); load(page + 1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); load(page - 1); }
+  };
+  document.addEventListener('keydown', onKey);
+  onLeave(root, () => { player.stop(); document.removeEventListener('keydown', onKey); });
+
   await load(page);
-  return () => player.stop();
 }

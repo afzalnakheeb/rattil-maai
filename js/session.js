@@ -66,7 +66,12 @@ export class RecitationSession {
     return this;
   }
 
-  elapsed() { return this.started ? Date.now() - this.started : 0; }
+  // Time into the recording: paused time is not counted, so marks line up with the audio.
+  elapsed() {
+    if (!this.started) return 0;
+    const pausedNow = this.pausedAt ? Date.now() - this.pausedAt : 0;
+    return Math.max(0, Date.now() - this.started - (this.pausedMs || 0) - pausedNow);
+  }
 
   async start() {
     if (this.running) return;
@@ -92,6 +97,7 @@ export class RecitationSession {
   }
 
   async stop() {
+    if (this.pausedAt) { this.pausedMs = (this.pausedMs || 0) + (Date.now() - this.pausedAt); this.pausedAt = 0; }
     this.running = false;
     if (this.listener) this.listener.stop();
     const blob = await this.recorder.stop();
@@ -118,16 +124,21 @@ export class RecitationSession {
     return { s: this.words.map((w) => code[w.status] || 'p').join(''), c: this.matcher.cursor, run: this.running };
   }
 
-  applyProgress({ s = '', c = 0, run = false }) {
+  applyProgress({ s = '', c = 0, run = false } = {}) {
     const status = { p: 'pending', o: 'ok', w: 'wrong', s: 'skipped' };
+    if (typeof s !== 'string') s = '';
+    c = Number.isInteger(c) ? c : 0;
     for (let i = 0; i < this.words.length && i < s.length; i++) this.words[i].status = status[s[i]] || 'pending';
     this.matcher.cursor = Math.min(this.words.length, Math.max(0, c));
     this.remoteRunning = !!run;
     this.onUpdate();
   }
 
-  addRemoteMark({ index, type, heard }) {
-    if (!(index >= 0 && index < this.words.length)) return;
+  addRemoteMark({ index, type, heard } = {}) {
+    if (!Number.isInteger(index) || index < 0 || index >= this.words.length) return;
+    if (!['wrong', 'skipped', 'extra'].includes(type)) return;
+    if (this.marks.length >= 600) return;
+    heard = typeof heard === 'string' ? heard.slice(0, 120) : '';
     const w = this.words[index];
     const mark = { id: uid(), index, type, heard: heard || '', word: w.display, surah: w.surah, ayah: w.ayah, source: 'ai', status: 'suggested', t: this.elapsed() };
     this.marks.push(mark);
@@ -140,9 +151,10 @@ export class RecitationSession {
   }
 
   applyMarks(list) {
-    this.viewMarks = (list || []).filter((m) => m.i >= 0 && m.i < this.words.length).map((m, k) => {
+    const ok = (v, l, d) => (l.includes(v) ? v : d);
+    this.viewMarks = (Array.isArray(list) ? list.slice(0, 600) : []).filter((m) => m && Number.isInteger(m.i) && m.i >= 0 && m.i < this.words.length).map((m, k) => {
       const w = this.words[m.i];
-      return { id: `v${k}`, index: m.i, type: m.ty, source: m.so, status: m.st, word: w.display, surah: w.surah, ayah: w.ayah, t: 0 };
+      return { id: `v${k}`, index: m.i, type: ok(m.ty, ['wrong', 'skipped', 'extra', 'peek', 'teacher'], 'wrong'), source: ok(m.so, ['ai', 'teacher'], 'ai'), status: ok(m.st, ['suggested', 'final', 'confirmed', 'dismissed'], 'final'), word: w.display, surah: w.surah, ayah: w.ayah, t: 0 };
     });
     this.onUpdate();
   }
@@ -154,6 +166,7 @@ export class RecitationSession {
     if (this.listener) this.listener.stop();
     const mr = this.recorder.mr;
     if (mr && mr.state === 'recording') mr.pause();
+    this.pausedAt = Date.now();
     this.onUpdate();
     return true;
   }
@@ -161,6 +174,7 @@ export class RecitationSession {
   resume() {
     if (this.running || !this.started) return;
     this.running = true;
+    if (this.pausedAt) { this.pausedMs = (this.pausedMs || 0) + (Date.now() - this.pausedAt); this.pausedAt = 0; }
     const mr = this.recorder.mr;
     if (mr && mr.state === 'paused') mr.resume();
     if (this.listener) this.listener.start();

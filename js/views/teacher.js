@@ -31,7 +31,7 @@ function ago(ts) {
 function studentSummary(st) {
   const d = st.state?.data;
   if (!d?.plan) return 'No plan yet';
-  const pages = Math.floor((d.plan.units || 0) / 2);
+  const pages = Math.floor((Number(d.plan.units) || 0) / 2);
   const streak = d.streak?.count || 0;
   return `${pages} ${pages === 1 ? 'page' : 'pages'} · ${streak}-day streak · active ${ago(st.state.updated_at)}`;
 }
@@ -155,10 +155,10 @@ export function teacherHome(root) {
     if (!recent) return;
     const top = list.slice(0, 6);
     recent.innerHTML = top.length ? top.map((h) => `
-      <a class="list-item" href="#/history/${h.id}" style="text-decoration:none;color:inherit">
+      <a class="list-item" href="#/history/${encodeURIComponent(h.id)}" style="text-decoration:none;color:inherit">
         <div class="icon-tile ${h.kind === 'practice' ? 'gold' : 'solid'}">${h.kind === 'online' ? icons.video : h.kind === 'practice' ? icons.mic : icons.users}</div>
         <div class="grow"><h3>${esc(h.student || 'Student')} · ${esc((h.title || '').split(' · ')[0])}</h3><div class="xs muted">${esc(fmtDate(h.created))} · ${fmtTime(h.duration)}${h.kind === 'practice' ? (h.review ? ' · reviewed' : ' · AI practice, needs review') : ''}</div></div>
-        ${h.grade ? `<b>${h.grade.total}</b>` : h.review?.grade ? `<b>${h.review.grade.total}</b>` : ''}
+        ${h.review?.grade ? `<b>${Number(h.review.grade.total) || 0}</b>` : h.grade ? `<b>${Number(h.grade.total) || 0}</b>` : ''}
       </a>`).join('') : '<p class="small muted">No sessions yet.</p>';
   })();
 }
@@ -373,9 +373,9 @@ export function paintMarking(root, session) {
   root.querySelector('#tCount').textContent = `Teacher ${active.filter((m) => m.source === 'teacher').length}`;
   root.querySelector('#log').innerHTML = active.length ? active.map((m) => `
       <div class="log-item">
-        <div class="spread"><span class="xs muted">${fmtTime(m.t)} · ayah ${m.ayah}</span>${m.source === 'teacher' ? '<span class="chip red">Teacher</span>' : m.status === 'confirmed' ? '<span class="chip red">AI · confirmed</span>' : '<span class="chip gold">AI suggestion</span>'}</div>
+        <div class="spread"><span class="xs muted">${fmtTime(m.t)} · ayah ${Number(m.ayah) || ''}</span>${m.source === 'teacher' ? '<span class="chip red">Teacher</span>' : m.status === 'confirmed' ? '<span class="chip red">AI · confirmed</span>' : '<span class="chip gold">AI suggestion</span>'}</div>
         <div class="row" style="gap:10px"><span class="quran" style="font-size:22px" lang="ar">${esc(m.word)}</span><span class="small">${esc(MARK_LABEL[m.type] || m.type)}${m.heard ? ` · heard «${esc(m.heard)}»` : ''}</span></div>
-        <div class="row" style="gap:8px;flex-wrap:wrap">${m.status === 'suggested' ? `<button class="btn sm" type="button" data-confirm="${m.id}">Confirm</button><button class="btn ghost sm" type="button" data-dismiss="${m.id}">Not a mistake</button>` : ''}<button class="btn gold sm" type="button" data-hear="${m.index}">${icons.play} Play correct</button></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap">${m.status === 'suggested' ? `<button class="btn sm" type="button" data-confirm="${esc(m.id)}">Confirm</button><button class="btn ghost sm" type="button" data-dismiss="${esc(m.id)}">Not a mistake</button>` : ''}<button class="btn gold sm" type="button" data-hear="${Number(m.index) || 0}">${icons.play} Play correct</button></div>
       </div>`).join('') : '<p class="small muted">Mistakes appear here as the student recites.</p>';
 }
 
@@ -427,7 +427,7 @@ export function gradeForm(root, session, { studentName, blob, onSubmit, title = 
       </div>
       <div class="card stack-s">
         <h2>Mistakes in this session</h2>
-        ${active.length ? active.map((m) => `<div class="row"><span class="quran" style="font-size:20px;padding:0 8px;border-radius:8px;background:var(--red-tint);border-bottom:2px solid var(--red)" lang="ar">${esc(m.word)}</span><span class="grow small">Ayah ${m.ayah} · ${esc(MARK_LABEL[m.type] || m.type)}</span><span class="chip red">${m.source === 'teacher' ? 'Teacher' : 'AI · confirmed'}</span></div>`).join('') : '<p class="small muted">No mistakes marked.</p>'}
+        ${active.length ? active.map((m) => `<div class="row"><span class="quran" style="font-size:20px;padding:0 8px;border-radius:8px;background:var(--red-tint);border-bottom:2px solid var(--red)" lang="ar">${esc(m.word)}</span><span class="grow small">Ayah ${Number(m.ayah) || ''} · ${esc(MARK_LABEL[m.type] || m.type)}</span><span class="chip red">${m.source === 'teacher' ? 'Teacher' : 'AI · confirmed'}</span></div>`).join('') : '<p class="small muted">No mistakes marked.</p>'}
         <p class="xs muted">Unconfirmed AI suggestions are not counted.</p>
       </div>
       <div class="card stack-s">

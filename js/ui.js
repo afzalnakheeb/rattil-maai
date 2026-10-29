@@ -57,3 +57,19 @@ export function band(total) {
   if (total >= 70) return { label: 'Good', cls: 'gold' };
   return { label: 'Repeat', cls: 'red' };
 }
+
+// Page lifecycle. A view registers what to stop when the user leaves it
+// (microphone, camera, timers, audio). If the user already left, it runs now.
+export function onLeave(root, fn) {
+  const page = root?.closest?.('.page') || root;
+  if (!page || !page.isConnected) { try { fn(); } catch (e) { console.error(e); } return; }
+  (page.__leave = page.__leave || []).push(fn);
+}
+export function leave(page) {
+  if (!page) return;
+  const fns = page.__leave || [];
+  page.__leave = [];
+  fns.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
+}
+// True while this view is still the one on screen.
+export const alive = (root) => !!root && root.isConnected;

@@ -12,8 +12,13 @@ export async function getMedia({ video = true } = {}) {
     try {
       return await navigator.mediaDevices.getUserMedia({ audio, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24 } } });
     } catch (e) {
-      if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) throw e;
-      // No camera or camera busy: continue with audio only.
+      // Camera blocked, missing or busy: try the microphone alone before giving up.
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ audio });
+        s.cameraBlocked = !!(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError'));
+        s.noCamera = true;
+        return s;
+      } catch { throw e; }
     }
   }
   return navigator.mediaDevices.getUserMedia({ audio });
@@ -34,6 +39,10 @@ export class CallLink {
     this.handlers = {};
     this.iceServers = null;
     this.discTimer = null;
+    this.watchdog = null;
+    // Identifies this page instance, so a reloaded teacher page (whose counter restarts) is recognised at once.
+    this.sid = Math.random().toString(36).slice(2, 10);
+    this.peerSid = null;
   }
 
   on(type, fn) { (this.handlers[type] = this.handlers[type] || []).push(fn); return this; }
@@ -78,7 +87,7 @@ export class CallLink {
     const pc = new RTCPeerConnection({ iceServers: this.iceServers });
     this.local.getTracks().forEach((t) => pc.addTrack(t, this.local));
     const gen = this.gen;
-    pc.onicecandidate = (e) => { if (e.candidate) this.room.send('sig', { k: 'ice', gen, c: e.candidate.toJSON() }); };
+    pc.onicecandidate = (e) => { if (e.candidate && !this.closed) this.room.send('sig', { k: 'ice', gen, sid: this.role === 'teacher' ? this.sid : this.peerSid, c: e.candidate.toJSON() }); };
     pc.ontrack = (e) => {
       const stream = e.streams && e.streams[0] ? e.streams[0] : (this._remote = this._remote || new MediaStream());
       if (!e.streams || !e.streams[0]) stream.addTrack(e.track);
@@ -94,7 +103,7 @@ export class CallLink {
     if (pc !== this.pc || this.closed) return;
     const s = pc.connectionState || pc.iceConnectionState;
     clearTimeout(this.discTimer);
-    if (s === 'connected' || s === 'completed') this._setState('connected');
+    if (s === 'connected' || s === 'completed') { clearTimeout(this.watchdog); this._setState('connected'); }
     else if (s === 'connecting' || s === 'checking' || s === 'new') this._setState(this.state === 'connected' ? 'reconnecting' : 'connecting');
     else if (s === 'disconnected') {
       this._setState('reconnecting');
@@ -104,7 +113,7 @@ export class CallLink {
 
   _recover() {
     if (this.closed) return;
-    if (this.role === 'teacher') this._offer(true);
+    if (this.role === 'teacher') this._offer(true).catch((e) => console.warn('offer', e));
     else this._hello(false);
   }
 
@@ -116,47 +125,67 @@ export class CallLink {
     const pc = this._newPc();
     this._setState('connecting');
     const offer = await pc.createOffer();
-    if (gen !== this.gen) return;
+    if (gen !== this.gen || pc !== this.pc || this.closed) return;
     await pc.setLocalDescription(offer);
-    this.room.send('sig', { k: 'offer', gen, sdp: pc.localDescription.toJSON ? pc.localDescription.toJSON() : { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+    if (gen !== this.gen || pc !== this.pc || this.closed) return;
+    this.room.send('sig', { k: 'offer', gen, sid: this.sid, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+    // If the answer is lost, offer again rather than waiting for ICE to time out.
+    clearTimeout(this.watchdog);
+    this.watchdog = setTimeout(() => {
+      if (this.closed || pc !== this.pc) return;
+      const st = pc.connectionState || pc.iceConnectionState;
+      if (st !== 'connected' && st !== 'completed') this._offer(true).catch(() => {});
+    }, 12000);
   }
 
   async _sig(m) {
     if (this.closed || !m || !m.k) return;
     if (m.k === 'hello') {
       if (m.from === this.role) return;
-      if (this.role === 'teacher') { this._emit('peer-hello', m); await this._offer(); }
+      // The student knocks only when it has no working connection, so answer at once.
+      if (this.role === 'teacher') { this._emit('peer-hello', m); await this._offer(true); }
       else if (!m.reply) this._hello(true);
       return;
     }
     if (m.k === 'offer' && this.role === 'student') {
-      if (m.gen < this.gen) return;
+      if (!Number.isInteger(m.gen) || !m.sdp || m.sdp.type !== 'offer' || typeof m.sdp.sdp !== 'string') return;
+      const newPeer = m.sid && m.sid !== this.peerSid;
+      if (!newPeer && m.gen < this.gen) return;
+      this.peerSid = m.sid || this.peerSid;
       this.gen = m.gen;
       const pc = this._newPc();
       this._setState('connecting');
-      await pc.setRemoteDescription(m.sdp);
-      await this._flushIce();
+      await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp.sdp });
+      if (pc !== this.pc || this.closed) return;
+      await this._flushIce(pc);
       const answer = await pc.createAnswer();
+      if (pc !== this.pc || this.closed) return;
       await pc.setLocalDescription(answer);
-      this.room.send('sig', { k: 'answer', gen: m.gen, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+      if (pc !== this.pc || this.closed) return;
+      this.room.send('sig', { k: 'answer', gen: m.gen, sid: this.peerSid, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
       return;
     }
     if (m.k === 'answer' && this.role === 'teacher') {
-      if (m.gen !== this.gen || !this.pc || this.pc.signalingState !== 'have-local-offer') return;
-      await this.pc.setRemoteDescription(m.sdp);
-      await this._flushIce();
+      if (m.gen !== this.gen || (m.sid && m.sid !== this.sid) || !this.pc || this.pc.signalingState !== 'have-local-offer') return;
+      if (!m.sdp || m.sdp.type !== 'answer' || typeof m.sdp.sdp !== 'string') return;
+      const pc = this.pc;
+      await pc.setRemoteDescription({ type: 'answer', sdp: m.sdp.sdp });
+      if (pc !== this.pc) return;
+      await this._flushIce(pc);
       return;
     }
     if (m.k === 'ice') {
       if (m.gen !== this.gen || !this.pc) return;
+      if (m.sid && m.sid !== (this.role === 'teacher' ? this.sid : this.peerSid)) return;
       if (!this.pc.remoteDescription) { this.pendingIce.push(m.c); return; }
       try { await this.pc.addIceCandidate(m.c); } catch { /* stale candidate */ }
     }
   }
 
-  async _flushIce() {
+  async _flushIce(pc) {
+    if (pc !== this.pc) return;
     const list = this.pendingIce.splice(0);
-    for (const c of list) { try { await this.pc.addIceCandidate(c); } catch { /* ignore */ } }
+    for (const c of list) { if (pc !== this.pc) return; try { await pc.addIceCandidate(c); } catch { /* ignore */ } }
   }
 
   setMuted(kind, off) {
@@ -169,6 +198,7 @@ export class CallLink {
     this.closed = true;
     clearInterval(this.knock);
     clearTimeout(this.discTimer);
+    clearTimeout(this.watchdog);
     if (this.pc) { try { this.pc.close(); } catch { /* ignore */ } }
     setTimeout(() => this.room?.close(), 300);
     this._setState('ended');
@@ -196,7 +226,8 @@ export class Mixer {
     this.sources.set(key, { node, stream });
   }
 
-  async resume() { if (this.ctx && this.ctx.state === 'suspended') { try { await this.ctx.resume(); } catch { /* ignore */ } } }
+  // iOS can leave the context 'suspended' or 'interrupted' (after a phone call or Siri).
+  async resume() { if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') { try { await this.ctx.resume(); } catch { /* ignore */ } } }
 
   close() {
     this.sources.forEach(({ node }) => { try { node.disconnect(); } catch { /* ignore */ } });

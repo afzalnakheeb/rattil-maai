@@ -3,6 +3,7 @@
 // The rest of the app only talks to this module (tests swap it for a fake).
 
 import { SUPABASE_URL, SUPABASE_KEY, SUPABASE_JS } from './config.js';
+import { cleanSession, cleanCall, cleanPerson, cleanState } from './clean.js';
 
 let sb = null;
 let me = null;
@@ -128,7 +129,8 @@ export async function saveSession(s, blob) {
   let audioPath = s.audioPath || null;
   if (blob && !audioPath) {
     const type = mime(blob);
-    const path = `${s.studentId || me.id}/${s.id}.${ext(type)}`;
+    // Each person uploads only into their own folder; readers get access through the session row.
+    const path = `${me.id}/${s.id}.${ext(type)}`;
     check(await sb.storage.from('recordings').upload(path, blob, { contentType: type, upsert: true }));
     audioPath = path;
   }
@@ -151,13 +153,13 @@ async function names(ids) {
   const list = [...new Set(ids.filter(Boolean))];
   if (!list.length) return {};
   const rows = check(await sb.from('profiles').select('id,name,email,avatar_url').in('id', list));
-  return Object.fromEntries(rows.map((r) => [r.id, r]));
+  return Object.fromEntries(rows.map((r) => [r.id, cleanPerson(r)]));
 }
 
 function fromRow(r, people, reviews) {
   const d = r.data || {};
   const rv = reviews.find((x) => x.session_id === r.id);
-  return {
+  return cleanSession({
     ...d,
     id: r.id,
     kind: r.kind,
@@ -171,7 +173,7 @@ function fromRow(r, people, reviews) {
     teacher: d.teacher || people[r.teacher_id]?.name || '',
     review: rv ? { ...rv.data, teacherId: rv.teacher_id, teacher: people[rv.teacher_id]?.name || '', updated: new Date(rv.updated_at).getTime() } : null,
     synced: true,
-  };
+  });
 }
 
 export async function listSessions({ studentId, limit = 200 } = {}) {
@@ -201,7 +203,7 @@ export async function deleteSession(s) {
 
 export async function audioUrl(path) {
   need();
-  const d = check(await sb.storage.from('recordings').createSignedUrl(path, 3600));
+  const d = check(await sb.storage.from('recordings').createSignedUrl(path, 900));
   return d.signedUrl;
 }
 
@@ -221,7 +223,7 @@ export async function myStudents() {
   return ids.map((id) => ({
     ...(people[id] || { id, name: 'Student' }),
     linked: links.find((l) => l.student_id === id).created_at,
-    state: states.find((x) => x.user_id === id) || null,
+    state: (() => { const x = states.find((y) => y.user_id === id); return x ? { ...x, data: cleanState(x.data) } : null; })(),
   })).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
@@ -247,7 +249,7 @@ export async function unlink(teacherId, studentId) {
 // ---- Live calls ----
 export async function startCall(studentId, portions) {
   need();
-  return check(await sb.from('calls').insert({ teacher_id: me.id, student_id: studentId, portions }).select('*').single());
+  return cleanCall(check(await sb.from('calls').insert({ teacher_id: me.id, student_id: studentId, portions }).select('*').single()));
 }
 
 export async function getCall(id) {
@@ -255,7 +257,7 @@ export async function getCall(id) {
   const c = check(await sb.from('calls').select('*').eq('id', id).maybeSingle());
   if (!c) return null;
   const people = await names([c.teacher_id, c.student_id]);
-  return { ...c, teacher: people[c.teacher_id] || null, student: people[c.student_id] || null };
+  return cleanCall({ ...c, teacher: people[c.teacher_id] || null, student: people[c.student_id] || null });
 }
 
 export async function updateCall(id, patch) {
@@ -270,15 +272,15 @@ export async function openCalls() {
   const since = new Date(Date.now() - 3 * 3600e3).toISOString();
   const rows = check(await sb.from('calls').select('*').in('status', ['ringing', 'active']).gte('created_at', since).order('created_at', { ascending: false }));
   const people = await names(rows.flatMap((c) => [c.teacher_id, c.student_id]));
-  return rows.map((c) => ({ ...c, teacher: people[c.teacher_id] || null, student: people[c.student_id] || null }));
+  return rows.map((c) => cleanCall({ ...c, teacher: people[c.teacher_id] || null, student: people[c.student_id] || null }));
 }
 
 // Notifies on any change to calls involving me (ringing, joined, ended).
 export function onCalls(cb) {
   if (!sb || !me) return () => {};
   const ch = sb.channel(`calls-for-${me.id}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls', filter: `student_id=eq.${me.id}` }, (p) => cb(p.new, p.eventType))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls', filter: `teacher_id=eq.${me.id}` }, (p) => cb(p.new, p.eventType))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls', filter: `student_id=eq.${me.id}` }, (p) => cb(cleanCall(p.new), p.eventType))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls', filter: `teacher_id=eq.${me.id}` }, (p) => cb(cleanCall(p.new), p.eventType))
     .subscribe();
   return () => { try { sb.removeChannel(ch); } catch { /* ignore */ } };
 }

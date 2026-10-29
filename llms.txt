@@ -1,0 +1,33 @@
+# Recite With Me (رتّل معي)
+
+> Recite With Me — in Arabic رتّل معي, “Rattil Maʿī” — is a free web app at https://rattilmai.com for memorizing the Quran (hifz) to the standard of Masjid al-Haram and Masjid an-Nabawi (Hafs ʿan ʿĀṣim, Madinah Mushaf). It combines a daily sabaq/sabqi/manzil plan, an AI that checks recitation word by word, free live video sessions where teachers confirm AI marks and grade out of 100, weekly and monthly parent reports, adhkar, duas, Ruqyah, prayer times and the Qibla. Free, no ads, English and Arabic.
+
+## Pages
+- [About](https://rattilmai.com/about/): what the app does for students, teachers and parents
+- [FAQ](https://rattilmai.com/faq/): short answers about the AI check, teacher sessions, reports, prayer times and privacy
+- [العربية](https://rattilmai.com/ar/): Arabic overview and FAQ
+- [Privacy](https://rattilmai.com/privacy/) · [Terms](https://rattilmai.com/terms/)
+- [Open the app](https://rattilmai.com/)
+
+## Key facts
+- Price: free, no advertising
+- Standard: riwayah Hafs ʿan ʿĀṣim, Uthmani script of the Madinah Mushaf (Tanzil text)
+- Reciters: al-Husary, al-Minshawi, as-Sudais, ash-Shuraim, al-Hudhaify, Alafasy, Abdul Basit, al-Ajamy
+- AI check: browser speech recognition, word level (skipped, wrong, extra words); not tajweed
+- Teacher sessions: class code, free 1:1 video in the browser, live AI suggestions, teacher marks, grade out of 100 (hifz 40, tajweed 30, makharij 20, waqf 10), pass or repeat, full recording
+- Parent reports: weekly and monthly; mistakes by type, words to revise, teacher feedback, adhkar
+- Prayer times: Umm al-Qura, UAE Awqaf (with 3-minute precautions), MWL, Egypt, Karachi, ISNA and more; per-prayer adjustments; location stays on device
+- Sign-in: Google account
+
+## FAQ
+- **What is Recite With Me (رتّل معي)?** Recite With Me, in Arabic رتّل معي (Rattil Maʿī), is a free web app for memorizing the Quran. It gives each student a daily plan (new lesson, recent revision and old revision), listens as you recite and marks mistakes word by word, and lets teachers hold free live video sessions where they confirm the AI’s marks, add their own and grade the recitation. It also includes adhkar, duas, Ruqyah, prayer times, the Qibla and weekly reports for parents.
+- **Is Recite With Me free?** Yes. The app is free to use and has no ads. Video sessions between a teacher and a student are free as well.
+- **Which Quran text and recitation standard does it follow?** It follows the standard of Masjid al-Haram and Masjid an-Nabawi: the riwayah of Hafs ʿan ʿĀṣim and the Uthmani script of the Madinah Mushaf (Tanzil text). You can listen to eight reciters, including Mahmoud Khalil al-Husary, al-Minshawi, Abdur-Rahman as-Sudais, Saud ash-Shuraim, Ali al-Hudhaify, Mishary Alafasy, Abdul Basit and al-Ajamy.
+- **How does the AI recitation check work?** You recite from memory while the words stay hidden. The app listens through your browser’s speech engine, follows you word by word, and reveals each word as you say it. If you skip a word, say the wrong word or add one, it marks it straight away and lets you play the correct word or the whole ayah. It checks the words, not the rules of tajweed, and it does not replace a teacher.
+- **Can my teacher listen to me online?** Yes. The teacher shares a 6-letter class code; the student joins with it. The teacher can then start a free video session from the app. The AI listens on the student’s phone and the teacher sees its suggestions live, confirms or dismisses them, adds marks of their own, and grades the recitation out of 100 with a pass or repeat decision. The whole session is recorded with every mark.
+- **What are sabaq, sabqi and manzil?** They are the three parts of the traditional daily hifz routine. Sabaq is the new lesson memorized today; sabqi is the revision of the recent lessons (in the app, the last 10 pages); manzil is the revision of older portions (20 pages in rotation). You choose half a page, one page or two pages of new memorization each day.
+- **How can parents follow their child’s progress?** The app makes weekly and monthly reports: days active, time spent reciting, new pages, AI accuracy, teacher grades and comments, the number and type of mistakes, the exact words to revise, and adhkar completed. Reports can be shared on WhatsApp or saved as a PDF.
+- **Do I need an account?** Students and teachers sign in with their Google account, so their progress, recordings and teacher stay with them on every device.
+- **Does it work on iPhone and Android?** Yes, in the browser on any phone, tablet or computer. Add it to your home screen to use it full screen like an app. The AI recitation check needs Chrome, Edge or Safari.
+- **How are prayer times and the Qibla calculated?** Prayer times are calculated on your device using the method of your country, such as Umm al-Qura (Saudi Arabia), the UAE Awqaf method with its 3-minute precautions, the Muslim World League, Egypt, Karachi or ISNA, with Standard or Hanafi Asr. You can adjust each prayer by minutes to match your mosque. The Qibla direction uses the great-circle bearing to the Kaaba, with a live compass on phones. Your location stays on your device.
+- **Is my data private?** Recordings are kept in private storage and can be opened only by you and the teacher you joined. The app has no advertising and does not sell data. Video calls connect the two devices directly and are encrypted.

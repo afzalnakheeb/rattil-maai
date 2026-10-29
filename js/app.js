@@ -4,7 +4,7 @@ import * as account from './account.js';
 import { icons } from './icons.js';
 import { applyTheme } from './theme.js';
 import { initFullscreenButton, watchViewport } from './fullscreen.js';
-import { esc, loading } from './ui.js';
+import { esc, loading, onLeave, leave, toast } from './ui.js';
 import todayView from './views/today.js';
 import mushafView from './views/mushaf.js';
 import reciteView from './views/recite.js';
@@ -22,7 +22,7 @@ const view = document.getElementById('view');
 const tabbar = document.getElementById('tabbar');
 const roleChip = document.getElementById('roleChip');
 const ring = document.getElementById('ring');
-let cleanup = null;
+let page = null; // each render gets a fresh container, so a late render of an old page lands off-screen
 let renderId = 0;
 let bootInfo = { signedIn: false, googleReady: false, cloudReady: false };
 let stopCalls = () => {};
@@ -48,7 +48,8 @@ function parse() {
 function paintChrome(route, show) {
   const s = store.get();
   const role = s.profile?.role;
-  tabbar.hidden = !show || !role;
+  // The tab bar hides during a video session so the controls have the whole screen.
+  tabbar.hidden = !show || !role || route === 'call';
   roleChip.hidden = !show || !role;
   if (!show || !role) return;
   roleChip.innerHTML = `${s.profile?.avatar ? avatar(s.profile, 22) : ''}<span>${role === 'teacher' ? 'Teacher' : 'Student'}</span>${icons.gear.replace('<svg', '<svg width="15" height="15"')}`;
@@ -65,28 +66,32 @@ function localAllowed() {
 }
 
 async function render() {
-  if (cleanup) { try { cleanup(); } catch { /* ignore */ } cleanup = null; }
+  leave(page);
   view.classList.remove('wide');
+  const pg = document.createElement('div');
+  pg.className = 'page';
+  view.replaceChildren(pg);
+  page = pg;
   const { route, id, params } = parse();
   const signedIn = account.isCloud();
   const s = store.get();
-  const mine = ++renderId;
+  ++renderId;
 
   if (!signedIn && !localAllowed()) {
     paintChrome(route, false);
     if (route === 'join' && id) { try { sessionStorage.setItem('rattil:join', id.toUpperCase()); } catch { /* ignore */ } }
-    welcome(view, { ...bootInfo, onLocal: () => { sessionStorage.setItem('rattil:local', '1'); render(); } });
+    welcome(pg, { ...bootInfo, onLocal: () => { sessionStorage.setItem('rattil:local', '1'); render(); } });
     return;
   }
   if (route === 'signin') {
     if (signedIn) { location.hash = '#/'; return; }
     paintChrome(route, false);
-    welcome(view, { ...bootInfo, onLocal: () => { location.hash = '#/'; } });
+    welcome(pg, { ...bootInfo, onLocal: () => { location.hash = '#/'; } });
     return;
   }
   if (!s.profile?.role) {
     paintChrome(route, false);
-    rolePicker(view, () => { location.hash = '#/'; render(); });
+    rolePicker(pg, () => { location.hash = '#/'; render(); });
     return;
   }
   if (signedIn) {
@@ -100,29 +105,26 @@ async function render() {
   const ctx = { rerender: render };
   let out;
   switch (route) {
-    case '': out = role === 'teacher' ? teacherHome(view) : todayView(view); break;
-    case 'mushaf': out = mushafView(view, params); break;
-    case 'recite': out = reciteView(view, params); break;
-    case 'adhkar': out = adhkarView(view, params); break;
-    case 'duas': out = duasView(view, params); break;
-    case 'prayer': out = prayerView(view, params); break;
-    case 'history': out = historyView(view, { ...params, id }); break;
-    case 'review': out = reviewView(view, { ...params, id }); break;
-    case 'live': out = liveView(view, params); break;
-    case 'call': out = callView(view, { ...params, id }); break;
-    case 'join': out = joinView(view, { ...params, id }); break;
-    case 'more': out = moreView(view, params); break;
-    case 'report': out = reportView(view, params); break;
-    case 'settings': out = settingsView(view, params, ctx); break;
-    default: view.innerHTML = '<div class="empty card">Page not found. <a href="#/">Go home</a></div>';
+    case '': out = role === 'teacher' ? teacherHome(pg) : todayView(pg); break;
+    case 'mushaf': out = mushafView(pg, params); break;
+    case 'recite': out = reciteView(pg, params); break;
+    case 'adhkar': out = adhkarView(pg, params); break;
+    case 'duas': out = duasView(pg, params); break;
+    case 'prayer': out = prayerView(pg, params); break;
+    case 'history': out = historyView(pg, { ...params, id }); break;
+    case 'review': out = reviewView(pg, { ...params, id }); break;
+    case 'live': out = liveView(pg, params); break;
+    case 'call': out = callView(pg, { ...params, id }); break;
+    case 'join': out = joinView(pg, { ...params, id }); break;
+    case 'more': out = moreView(pg, params); break;
+    case 'report': out = reportView(pg, params); break;
+    case 'settings': out = settingsView(pg, params, ctx); break;
+    default: pg.innerHTML = '<div class="empty card">Page not found. <a href="#/">Go home</a></div>';
   }
   if (route !== 'call') window.scrollTo(0, 0);
   hideRingFor(route, id);
   const res = await out;
-  if (typeof res === 'function') {
-    if (mine === renderId) cleanup = res;
-    else res();
-  }
+  if (typeof res === 'function') onLeave(pg, res);
 }
 
 // ---------- Incoming video session (student) ----------
@@ -179,13 +181,17 @@ async function showRing(callRow) {
       ${avatar(t, 46)}
       <div class="grow"><b>${esc(t.name)}</b><div class="small" style="opacity:.8">is calling you for a recitation session</div></div>
       <button class="btn ghost sm" id="ringNo" type="button" style="color:inherit;border-color:rgba(255,255,255,.35)">Later</button>
-      <a class="btn gold sm" id="ringYes" href="#/call/${full.id}">${icons.video} Join</a>
+      <a class="btn gold sm" id="ringYes" href="#/call/${encodeURIComponent(full.id)}">${icons.video} Join</a>
     </div>`;
   playRingSound();
   if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
     try { new Notification('Recite With Me', { body: `${t.name} is calling you for a recitation session`, icon: 'icons/icon-192.png', tag: full.id }); } catch { /* ignore */ }
   }
-  ring.querySelector('#ringNo').addEventListener('click', () => { ring.innerHTML = ''; stopRingSound(); ringing = null; });
+  ring.querySelector('#ringNo').addEventListener('click', () => {
+    ring.innerHTML = ''; stopRingSound(); ringing = null;
+    // Today shows a 'waiting' card with a Join button: refresh it now.
+    if (parse().route === '') render();
+  });
   ring.querySelector('#ringYes').addEventListener('click', () => { stopRingSound(); });
 }
 
@@ -225,7 +231,11 @@ async function boot() {
     window.addEventListener('pointerdown', () => { try { Notification.requestPermission(); } catch { /* ignore */ } }, { once: true });
   }
   window.addEventListener('online', () => { account.syncPending(); });
+  // Ask the browser to keep recordings that have not uploaded yet (Safari clears idle sites).
+  try { navigator.storage?.persist?.().catch(() => {}); } catch { /* ignore */ }
 }
+
+window.addEventListener('rattil:storage-full', () => toast('This device is out of storage space. New progress may not be saved until you free some space.'));
 
 roleChip.addEventListener('click', () => { location.hash = '#/settings'; });
 initFullscreenButton(document.getElementById('fsBtn'));

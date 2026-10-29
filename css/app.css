@@ -466,7 +466,7 @@ button.w { cursor: pointer; }
   .call-main { grid-column: 1; grid-row: 1; }
   .call-side .call-stage { aspect-ratio: 4 / 3; }
 }
-@media (min-width: 1360px) {
+@media (min-width: 1180px) {
   .call-main .session-grid { grid-template-columns: minmax(0, 1fr) 320px; }
 }
 @media (max-width: 600px) { .call-stage { aspect-ratio: 4 / 5; } }
@@ -518,3 +518,18 @@ audio { width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* Crawlable intro shown until the app renders (replaced on first route). */
+.seo-intro { padding: 28px 4px; color: var(--ink-2); }
+.seo-intro h1 { font-family: var(--display, inherit); font-size: 24px; color: var(--ink); margin-bottom: 10px; }
+.seo-intro p { line-height: 1.7; margin: 0 0 10px; }
+
+/* Short landscape phones: let the page scroll instead of pinning the header and the recite dock. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .topbar { position: static; }
+  .dock { position: static; box-shadow: var(--shadow); }
+}
+
+/* Text on the green call overlay keeps enough contrast in both themes. */
+.call-stage .overlay .muted, .call-stage .overlay .small { color: var(--hero-ink); opacity: .88; }
+.call-stage .tap-sound { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 3; }
