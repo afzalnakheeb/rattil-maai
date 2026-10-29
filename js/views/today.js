@@ -6,7 +6,7 @@ import { icons } from '../icons.js';
 import { SETS, ADHKAR } from '../adhkar.js';
 import * as cloud from '../cloud.js';
 import { isCloud } from '../account.js';
-import { computeTimes, nextPrayer, tzOffsetHours } from '../prayer.js';
+import { computeTimes, nextPrayer, tzOffsetHours, optionsFrom } from '../prayer.js';
 import { avatar } from './teacher.js';
 
 function nextPrayerLine(settings) {
@@ -15,7 +15,7 @@ function nextPrayerLine(settings) {
   try {
     const now = new Date();
     const tz = p.tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const opts = { method: p.method || 'mwl', asr: p.asr || 'standard' };
+    const opts = optionsFrom(p);
     const t = computeTimes(now, p.lat, p.lng, tzOffsetHours(tz, now), opts);
     const tm = new Date(now.getTime() + 864e5);
     const t2 = computeTimes(tm, p.lat, p.lng, tzOffsetHours(tz, tm), opts);

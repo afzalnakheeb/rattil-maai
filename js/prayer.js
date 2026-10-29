@@ -8,7 +8,8 @@ export const KAABA = { lat: 21.4225, lng: 39.8262 };
 // fajr / isha are sun depression angles in degrees; ishaMin means "minutes after Maghrib".
 export const METHODS = [
   { id: 'makkah', label: 'Umm al-Qura, Makkah', region: 'Saudi Arabia', fajr: 18.5, ishaMin: 90, ishaMinRamadan: 120 },
-  { id: 'dubai', label: 'Dubai', region: 'United Arab Emirates', fajr: 18.2, isha: 18.2 },
+  // UAE (Awqaf / IACAD): 18.2° plus 3-minute precautions on sunrise, Dhuhr, Asr and Maghrib.
+  { id: 'dubai', label: 'UAE (Awqaf, Dubai)', region: 'United Arab Emirates', fajr: 18.2, isha: 18.2, adjust: { sunrise: -3, dhuhr: 3, asr: 3, maghrib: 3 } },
   { id: 'mwl', label: 'Muslim World League', region: 'Europe, Far East, most other places', fajr: 18, isha: 17 },
   { id: 'egypt', label: 'Egyptian General Authority of Survey', region: 'Egypt, Africa, Levant', fajr: 19.5, isha: 17.5 },
   { id: 'karachi', label: 'University of Islamic Sciences, Karachi', region: 'Pakistan, India, Bangladesh', fajr: 18, isha: 18 },
@@ -117,13 +118,15 @@ export function isRamadan(date = new Date()) {
  * date: any Date; its local calendar day (getFullYear/getMonth/getDate) is the day computed.
  * tzOffsetHours: the location's UTC offset; defaults to the device's offset on that date.
  * opts: { method: id, asr: 'standard'|'hanafi', highLat: 'angle'|'middle'|'seventh'|'none',
- *         ramadan: boolean|'auto' (Umm al-Qura Isha 120 min), dhuhrOffset: minutes (default 0) }
+ *         ramadan: boolean|'auto' (Umm al-Qura Isha 120 min, default 'auto'), dhuhrOffset: minutes (default 0),
+ *         offsets: { fajr, sunrise, dhuhr, asr, maghrib, isha } minutes added after the method's own adjustments }
  * Returns { fajr, sunrise, dhuhr, asr, maghrib, isha } as Date instants rounded to the minute.
  * When tzOffsetHours equals the device's zone they read correctly with toLocaleTimeString();
  * for another zone, format them with { timeZone } of that place.
  */
 export function computeTimes(date, lat, lng, tzOffset, opts = {}) {
-  const { asr = 'standard', highLat = 'angle', ramadan = false, dhuhrOffset = 0 } = opts;
+  const { asr = 'standard', highLat = 'angle', ramadan = 'auto', dhuhrOffset = 0 } = opts;
+  const adj = (k) => ((getMethod(opts.method).adjust || {})[k] || 0) + (Number((opts.offsets || {})[k]) || 0);
   const m = getMethod(opts.method);
   const y = date.getFullYear(), mo = date.getMonth() + 1, d = date.getDate();
   const tz = Number.isFinite(tzOffset) ? tzOffset : -new Date(y, mo - 1, d, 12).getTimezoneOffset() / 60;
@@ -176,13 +179,13 @@ export function computeTimes(date, lat, lng, tzOffset, opts = {}) {
   // Round each to the nearest minute; fixed-minute Isha is exact from rounded Maghrib.
   const mins = (h) => Math.round(h * 60);
   const out = {
-    fajr: mins(t.fajr),
-    sunrise: mins(t.sunrise),
-    dhuhr: mins(t.dhuhr) + dhuhrOffset,
-    asr: mins(t.asr),
-    maghrib: mins(t.sunset),
+    fajr: mins(t.fajr) + adj('fajr'),
+    sunrise: mins(t.sunrise) + adj('sunrise'),
+    dhuhr: mins(t.dhuhr) + dhuhrOffset + adj('dhuhr'),
+    asr: mins(t.asr) + adj('asr'),
+    maghrib: mins(t.sunset) + adj('maghrib'),
   };
-  out.isha = ishaMin == null ? mins(t.isha) : out.maghrib + ishaMin;
+  out.isha = (ishaMin == null ? mins(t.isha) : out.maghrib + ishaMin) + adj('isha');
 
   const base = Date.UTC(y, mo - 1, d) - tz * 3600000;
   const res = {};
@@ -190,6 +193,11 @@ export function computeTimes(date, lat, lng, tzOffset, opts = {}) {
     res[k] = new Date(Number.isFinite(out[k]) ? base + out[k] * 60000 : NaN);
   }
   return res;
+}
+
+// Options for computeTimes from the saved settings.prayer object.
+export function optionsFrom(p = {}) {
+  return { method: p.method || 'mwl', asr: p.asr || 'standard', highLat: p.highLat || 'angle', offsets: p.offsets || {}, ramadan: 'auto' };
 }
 
 /**

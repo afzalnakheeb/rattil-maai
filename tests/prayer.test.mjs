@@ -49,8 +49,15 @@ const DUBAI = [25.2048, 55.2708];
 const db = computeTimes(new Date(2026, 5, 21), ...DUBAI, 4, { method: 'dubai' });
 console.log(`Dubai 2026-06-21 (dubai):    ${show(db, 4)}`);
 test('Dubai Fajr ~04:00 (±5)', () => near(db.fajr, 4, '04:00', 5, 'Fajr'));
-test('Dubai Dhuhr ~12:21', () => near(db.dhuhr, 4, '12:21', 2, 'Dhuhr'));
-test('Dubai Maghrib ~19:12', () => near(db.maghrib, 4, '19:12', 2, 'Maghrib'));
+test('Dubai Dhuhr ~12:24 (incl. +3 min UAE precaution)', () => near(db.dhuhr, 4, '12:24', 2, 'Dhuhr'));
+test('Dubai Maghrib ~19:15 (incl. +3 min UAE precaution)', () => near(db.maghrib, 4, '19:15', 2, 'Maghrib'));
+test('Mosque offsets shift each prayer', () => {
+  const base = computeTimes(new Date(2026, 9, 29), ...DUBAI, 4, { method: 'dubai' });
+  const moved = computeTimes(new Date(2026, 9, 29), ...DUBAI, 4, { method: 'dubai', offsets: { fajr: 2, isha: -5 } });
+  if (moved.fajr - base.fajr !== 2 * 60000) throw new Error('fajr offset');
+  if (moved.isha - base.isha !== -5 * 60000) throw new Error('isha offset');
+  if (moved.asr - base.asr !== 0) throw new Error('asr unchanged');
+});
 test('Dubai order', () => ordered(db, 'Dubai'));
 
 const LONDON = [51.5074, -0.1278];

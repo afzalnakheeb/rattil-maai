@@ -1,6 +1,6 @@
 // Prayer times + Qibla (#/prayer). Location and preferences live in settings.prayer.
 import {
-  METHODS, PRAYERS, getMethod, computeTimes, nextPrayer, qiblaBearing, distanceToMakkahKm,
+  METHODS, PRAYERS, getMethod, computeTimes, nextPrayer, qiblaBearing, distanceToMakkahKm, optionsFrom,
   methodForCountry, methodForTimezone, tzOffsetHours, cardinal,
 } from '../prayer.js';
 import * as store from '../store.js';
@@ -17,6 +17,10 @@ const ICON = {
 };
 
 const STYLE = `<style>
+.prayer-adjust summary { cursor: pointer; padding: 4px 0; }
+.prayer-adjust-grid { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 8px 12px; align-items: center; margin-top: 10px; }
+.prayer-adjust .adj-input { width: 64px; min-height: 36px; padding: 4px 6px; text-align: center; }
+.prayer-adjust .sm-step { width: 36px; height: 36px; font-size: 18px; }
 .prayer-page .prayer-row { padding: 11px 10px; margin: 0 -10px; border-top: 1px solid var(--line); }
 .prayer-page .prayer-name { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
 .prayer-page .prayer-row:first-child { border-top: 0; padding-top: 11px; }
@@ -94,7 +98,7 @@ export default async function prayerView(root, params) { // eslint-disable-line 
   let alive = true;
   let tick = null;
   let searchCtl = null;
-  const ui = { searchOpen: false, geoMsg: '', geoBusy: false };
+  const ui = { searchOpen: false, geoMsg: '', geoBusy: false, adjustOpen: false };
   const compass = { on: false, heading: null, rot: 0, raf: 0, gotData: false, waitTimer: null, msg: '', aligned: false };
   let shownNextKey = '';
 
@@ -121,7 +125,7 @@ export default async function prayerView(root, params) { // eslint-disable-line 
     const offDay = tz ? tzOffsetHours(tz, noon) : -day.getTimezoneOffset() / 60;
     return {
       offset: offDay,
-      times: computeTimes(day, c.lat, c.lng, offDay, { method: c.method, asr: c.asr, ramadan: c.method === 'makkah' ? 'auto' : false }),
+      times: computeTimes(day, c.lat, c.lng, offDay, optionsFrom(c)),
     };
   }
 
@@ -223,6 +227,14 @@ export default async function prayerView(root, params) { // eslint-disable-line 
         </div>
         <span class="xs muted">${asr === 'hanafi' ? 'Hanafi: when a shadow is twice an object’s length.' : 'Standard: Shafi’i, Maliki and Hanbali, when a shadow equals an object’s length.'}</span>
       </div>
+      <details class="prayer-adjust" ${ui.adjustOpen ? 'open' : ''}>
+        <summary class="label">Adjust times to match your mosque</summary>
+        <p class="xs muted">Calculated times can differ from your mosque’s by a few minutes. Add or subtract minutes for any prayer.</p>
+        <div class="prayer-adjust-grid">
+          ${PRAYERS.map((p) => `<label class="small" for="adj-${p.key}">${p.en}</label><div class="row" style="gap:6px"><button class="icon-btn sm-step" type="button" data-step="${p.key}" data-d="-1" aria-label="${p.en} one minute earlier">−</button><input class="input adj-input" id="adj-${p.key}" type="number" inputmode="numeric" min="-30" max="30" value="${Number((c.offsets || {})[p.key]) || 0}" data-adj="${p.key}"><button class="icon-btn sm-step" type="button" data-step="${p.key}" data-d="1" aria-label="${p.en} one minute later">+</button><span class="xs muted">min</span></div>`).join('')}
+        </div>
+      </details>
+      ${m.id === 'dubai' && new Date().getDay() === 5 ? '<p class="notice small">Jumu’ah in the UAE is at 12:45 pm in every emirate.</p>' : ''}
     </div>`;
   }
 
@@ -311,6 +323,16 @@ export default async function prayerView(root, params) { // eslint-disable-line 
       render();
     });
     root.querySelectorAll('[data-asr]').forEach((btn) => btn.addEventListener('click', () => { savePrayer({ asr: btn.dataset.asr }); render(); }));
+    const setAdj = (k, v) => {
+      const val = Math.max(-30, Math.min(30, Math.round(Number(v) || 0)));
+      const offsets = { ...(cfg()?.offsets || {}), [k]: val };
+      ui.adjustOpen = true;
+      savePrayer({ offsets });
+      render();
+    };
+    root.querySelector('.prayer-adjust')?.addEventListener('toggle', (e) => { ui.adjustOpen = e.currentTarget.open; });
+    root.querySelectorAll('[data-adj]').forEach((inp) => inp.addEventListener('change', () => setAdj(inp.dataset.adj, inp.value)));
+    root.querySelectorAll('[data-step]').forEach((btn) => btn.addEventListener('click', () => setAdj(btn.dataset.step, (Number((cfg()?.offsets || {})[btn.dataset.step]) || 0) + Number(btn.dataset.d))));
     root.querySelector('#pCompass')?.addEventListener('click', () => (compass.on ? stopCompass(true) : startCompass()));
   }
 
