@@ -1,0 +1,15 @@
+import { createClient } from '@supabase/supabase-js';
+const URL = 'https://fvkfqhtkgqookivtrlxf.supabase.co', KEY = 'sb_publishable_PM4njMy-Q9BHa7XXwToZyA_V5mCnLUr';
+const out = (n, ok, x = '') => console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  · ' + x : ''}`);
+const s = await (await fetch(`${URL}/auth/v1/settings`, { headers: { apikey: KEY } })).json();
+out('Auth settings reachable', !!s.external, `google=${s.external?.google} email=${s.external?.email}`);
+const sb = createClient(URL, KEY);
+const { data, error } = await sb.from('profiles').select('id').limit(1);
+out('Signed-out visitors cannot read profiles', !data?.length, error ? error.code + ' ' + error.message : `rows=${data?.length}`);
+const f = await fetch(`${URL}/functions/v1/ice-servers`, { method: 'POST', headers: { apikey: KEY } });
+out('ice-servers function is protected (needs sign-in)', f.status === 401, `status ${f.status}`);
+const r = await fetch(`${URL}/rest/v1/rpc/is_teacher_of`, { method: 'POST', headers: { apikey: KEY, 'content-type': 'application/json' }, body: '{"student":"00000000-0000-0000-0000-000000000000"}' });
+out('Policy helpers are not exposed in the API', r.status === 404 || r.status === 401, `status ${r.status}`);
+const st = await new Promise((res) => { const ch = sb.channel('warmup', { config: { broadcast: { self: false } } }); ch.subscribe((x) => { if (x !== 'JOINING') res(x); }); setTimeout(() => res('timeout'), 15000); });
+out('Realtime service answers', st === 'SUBSCRIBED', st);
+process.exit(0);
