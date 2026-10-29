@@ -4,7 +4,9 @@
 import * as cloud from '../cloud.js';
 import * as store from '../store.js';
 import { isCloud } from '../account.js';
-import { esc, loading, errorBox, toast, alive } from '../ui.js';
+import { esc, loading, errorBox, toast, alive, onLeave, fmtTime } from '../ui.js';
+import { Recorder, recordingSupported } from '../speech.js';
+import { getMeta } from '../quran.js';
 import { icons } from '../icons.js';
 import { LANGUAGES, TEACHES, langName } from '../clean.js';
 
@@ -118,6 +120,19 @@ export async function applyView(root) {
           <div class="field" style="flex:2 1 220px"><label for="aAvail">When you are free (with your time zone)</label><input class="input" id="aAvail" name="avail" value="${esc(a.availability || '')}" maxlength="400" placeholder="Weekdays after Asr, Sat–Sun mornings (GMT+4)"></div>
           <div class="field" style="flex:1 1 120px"><label for="aHours">Hours per week</label><input class="input" id="aHours" name="hours" type="number" min="1" max="80" inputmode="numeric" value="${esc(a.hours_per_week || 5)}"></div>
         </div>
+        <section class="recite-test stack-s" id="reciteTest">
+          <h2>Your recitation test</h2>
+          <p class="small">Every teacher is approved only after the academy listens to their recitation and checks tajweed.</p>
+          <ol class="small test-steps">
+            <li>Choose <b>one surah</b> you know by heart, at least 10 ayahs long. Good choices: Al-Mulk (67), Al-Insan (76), An-Naba (78), Al-Aʿla (87) or Al-Fajr (89).</li>
+            <li>Find a <b>quiet room</b>. No music, TV or other voices. Hold the phone about 20–30 cm from your mouth.</li>
+            <li>Begin with the <b>istiʿādhah and basmalah</b>, then recite <b>from memory</b> in a clear murattal style, at the pace you would teach.</li>
+            <li>Apply <b>full tajweed</b>: makharij, madd, ghunnah, idgham and ikhfa, and proper waqf. We check accuracy and tajweed, not the voice.</li>
+            <li>Take <b>2 to 10 minutes</b>. Listen back, and record again if you are not happy.</li>
+          </ol>
+          <div class="field"><label for="rcSurah">Surah you will recite</label><select class="input" id="rcSurah" name="rcSurah"><option value="">Choose a surah…</option></select></div>
+          <div class="rec-box" id="recBox"></div>
+        </section>
         <div class="field"><label for="aPhone">WhatsApp number (only the academy sees it)</label><input class="input" id="aPhone" name="phone" type="tel" value="${esc(a.phone || '')}" maxlength="30" autocomplete="tel" placeholder="+971 …"></div>
         ${locked ? '' : `<button class="btn block" type="submit">${app ? 'Update my application' : 'Send my application'}</button>
         <p class="xs muted">Your name, languages, experience, ijazah, bio and availability appear on your teacher card once you are approved. Your phone number is never shown to students.</p>`}
@@ -127,15 +142,76 @@ export async function applyView(root) {
   limitPicks(root);
   const form = root.querySelector('#appForm');
   wireMain(form, 'main');
+
+  // ---- Recitation test: record, listen, record again ----
+  const minSec = () => (Number.isFinite(window.__testMinRec) ? window.__testMinRec : 30); const MAX_SEC = 15 * 60;
+  let rec = null; let blob = null; let secs = a.recitation_seconds || 0; let tick = null; let url = '';
+  const surahSel = form.querySelector('#rcSurah');
+  getMeta().then((m) => {
+    if (!alive(root)) return;
+    surahSel.insertAdjacentHTML('beforeend', m.surahs.map((x) => `<option value="${x.number}" ${a.recitation_surah === x.number ? 'selected' : ''}>${x.number}. ${esc(x.english)} · ${esc(x.name)}</option>`).join(''));
+  }).catch(() => {
+    surahSel.insertAdjacentHTML('beforeend', Array.from({ length: 114 }, (_, i) => `<option value="${i + 1}" ${a.recitation_surah === i + 1 ? 'selected' : ''}>Surah ${i + 1}</option>`).join(''));
+  });
+  const box = form.querySelector('#recBox');
+  function paintRec(state) {
+    if (state === 'recording') {
+      box.innerHTML = `<div class="rec-live"><span class="dot"></span><b id="recTime">0:00</b><span class="small muted">Recording… recite now</span></div>
+        <button class="btn danger block" type="button" id="recStop">${icons.stop || '■'} Stop recording</button>`;
+      box.querySelector('#recStop').addEventListener('click', stopRec);
+    } else if (blob || a.recitation_path) {
+      box.innerHTML = `${blob ? `<audio controls src="${url}" preload="metadata"></audio>` : '<p class="small">Your recitation was sent with the application.</p>'}
+        <p class="xs muted">${fmtTime(secs * 1000)} recorded${blob ? ' · not sent yet' : ''}</p>
+        <button class="btn outline sm" type="button" id="recAgain">${icons.mic} Record again</button>`;
+      box.querySelector('#recAgain').addEventListener('click', startRec);
+    } else {
+      box.innerHTML = recordingSupported()
+        ? `<button class="btn gold block lg" type="button" id="recStart">${icons.mic} Start recording</button><p class="xs muted">Your browser will ask to use the microphone. Tap Allow.</p>`
+        : '<div class="notice">This browser cannot record audio. Open this page in Safari or Chrome on your phone.</div>';
+      box.querySelector('#recStart')?.addEventListener('click', startRec);
+    }
+  }
+  async function startRec() {
+    if (!surahSel.value) { toast('First choose the surah you will recite.'); surahSel.focus(); return; }
+    rec = new Recorder();
+    const ok = await rec.start(null, { bitrate: 64000 });
+    if (!ok) { rec = null; toast('The microphone could not start. Allow the microphone for rattilmai.com and try again.'); return; }
+    if (!alive(root)) { rec.stop(); return; }
+    paintRec('recording');
+    tick = setInterval(() => {
+      const t = Math.floor(rec.elapsed() / 1000);
+      const el = box.querySelector('#recTime'); if (el) el.textContent = fmtTime(t * 1000);
+      if (t >= MAX_SEC) stopRec();
+    }, 500);
+  }
+  async function stopRec() {
+    if (!rec) return;
+    clearInterval(tick);
+    const t = Math.floor(rec.elapsed() / 1000);
+    const b = await rec.stop(); rec = null;
+    if (!b || t < minSec()) { toast(`That was too short. Recite the whole surah (at least ${minSec()} seconds).`); paintRec(); return; }
+    if (url) URL.revokeObjectURL(url);
+    blob = b; secs = t; url = URL.createObjectURL(b);
+    paintRec();
+  }
+  onLeave(root, () => { clearInterval(tick); if (rec) rec.stop(); if (url) URL.revokeObjectURL(url); });
+  if (!locked) paintRec(); else box.innerHTML = a.recitation_path ? '<p class="small">Your recitation was sent with the application.</p>' : '';
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const main = readMain(form, 'main');
     if (!main) { toast('Choose your mother tongue.'); return; }
+    if (rec) { toast('Stop the recording first.'); return; }
+    if (!surahSel.value) { toast('Choose the surah of your recitation test.'); surahSel.focus(); return; }
+    if (!blob && !a.recitation_path) { toast('Record your recitation test before sending.'); form.querySelector('#reciteTest').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     const langs = [main, ...checked(form, 'lang').filter((l) => l !== main)].slice(0, MAX_LANGS);
     const btn = form.querySelector('button[type="submit"]');
     btn.disabled = true;
     try {
+      let path = a.recitation_path || '';
+      if (blob) { btn.innerHTML = '<span class="spinner sm"></span> Uploading your recitation…'; path = await cloud.uploadRecitation(blob); }
       await cloud.submitApplication({
+        recitation_path: path, recitation_surah: Number(surahSel.value) || null, recitation_seconds: secs,
         name: form.elements.fullname.value, gender: form.querySelector('input[name="gender"]:checked')?.value,
         years_experience: Number(form.elements.years.value), country: form.elements.country.value, languages: langs,
         teaches: checked(form, 'teaches'), ijazah: form.elements.ijazah.value, qualifications: form.elements.qual.value,
@@ -145,6 +221,7 @@ export async function applyView(root) {
       applyView(root);
     } catch (err) {
       btn.disabled = false;
+      btn.textContent = app ? 'Update my application' : 'Send my application';
       toast('Could not send. Check your connection and try again.');
       console.warn(err);
     }

@@ -113,6 +113,13 @@ async function render() {
 
   paintChrome(route, true);
   const role = s.profile.role;
+  // Teaching pages stay closed until the academy approves the teacher.
+  if (role === 'teacher' && account.isCloud() && !account.teacherApproved() && ['live', 'review'].includes(route)) {
+    const { lockedNote } = await import('./views/teacher.js');
+    pg.innerHTML = `<div class="stack">${lockedNote()}</div>`;
+    account.refreshApproval().then((ok) => { if (ok && page === pg) render(); }).catch(() => {});
+    return;
+  }
   const ctx = { rerender: render };
   let out;
   switch (route) {

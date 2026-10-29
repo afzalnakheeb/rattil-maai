@@ -51,6 +51,7 @@ export async function afterSignIn() {
     profile = await cloud.updateProfile({ role: localRole });
   }
   applyProfile();
+  try { await refreshApproval(); } catch { /* offline */ }
   await syncState();
   if (!unsubscribeStore) unsubscribeStore = store.onChange(() => schedulePush());
   syncPending();
@@ -66,9 +67,19 @@ function applyProfile() {
       avatar: cleanAvatar(profile?.avatar_url),
       role: profile?.role || null,
       code: profile?.invite_code || '',
+      approved: x.profile?.id === u.id ? !!x.profile?.approved : false,
     };
     x.meta.uid = u.id;
   }, { silent: true });
+}
+
+// A teacher can teach only after the academy approves them (checked again on the server).
+export const teacherApproved = () => !isCloud() || !!store.get().profile?.approved;
+export async function refreshApproval() {
+  if (!isCloud()) return true;
+  const ok = await cloud.amIApprovedTeacher();
+  if (!!store.get().profile?.approved !== ok) store.update((x) => { if (x.profile) x.profile.approved = ok; }, { silent: true });
+  return ok;
 }
 
 export async function setRole(role) {

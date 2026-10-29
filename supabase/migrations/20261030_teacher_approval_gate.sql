@@ -1,0 +1,4 @@
+-- Applied 30 Oct 2026 (teacher_approval_gate_and_recitation, approval_requires_recitation).
+-- Teachers teach only after approval: calls, teacher sessions, reviews, class-code joins and assignment
+-- all require private.is_approved_teacher(). Applications carry a recorded surah (recitation_path,
+-- recitation_surah, recitation_seconds) that admins can play; approval is refused without it.

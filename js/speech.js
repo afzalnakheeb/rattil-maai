@@ -70,14 +70,14 @@ export class Recorder {
   }
 
   // stream: record an existing stream (e.g. the mixed call audio) instead of opening the microphone.
-  async start(stream = null) {
+  async start(stream = null, { bitrate = 40000 } = {}) {
     this.startedAt = Date.now();
     if (!window.MediaRecorder || (!stream && !recordingSupported())) return false;
     try {
       this.external = !!stream;
       this.stream = stream || await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
       const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
-      const opts = { audioBitsPerSecond: 40000 };
+      const opts = { audioBitsPerSecond: bitrate };
       if (type) opts.mimeType = type;
       this.mr = new MediaRecorder(this.stream, opts);
       this.chunks = [];

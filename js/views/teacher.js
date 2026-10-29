@@ -2,12 +2,12 @@ import * as store from '../store.js';
 import * as plan from '../plan.js';
 import * as cloud from '../cloud.js';
 import * as records from '../records.js';
-import { isCloud } from '../account.js';
+import { isCloud, teacherApproved, refreshApproval } from '../account.js';
 import { RecitationSession, MARK_LABEL } from '../session.js';
 import { renderWords } from './words.js';
 import { speechSupported, recordingSupported } from '../speech.js';
 import { TOTAL_PAGES, audioUrl, describePortions } from '../quran.js';
-import { esc, fmtDate, fmtTime, band, uid, loading, errorBox, toast } from '../ui.js';
+import { esc, fmtDate, fmtTime, band, uid, loading, errorBox, toast, alive } from '../ui.js';
 import { icons } from '../icons.js';
 import { SITE_URL } from '../config.js';
 
@@ -57,7 +57,40 @@ async function fillAcademy(root) {
   else box.innerHTML = card('', 'red', 'Application not approved', app.admin_note ? esc(app.admin_note) : 'See the note from the academy.', 'View');
 }
 
+// Until the academy approves a teacher, teaching tools stay closed.
+export function lockedNote() {
+  return `<div class="card stack-s locked-note">
+    <h2>Teaching opens after approval</h2>
+    <p class="small">Your class code, students, video sessions and grading open once the academy has listened to your recitation test and approved your application.</p>
+    <a class="btn sm" href="#/apply" style="align-self:flex-start">See my application</a></div>`;
+}
+
+function lockedHome(root) {
+  const s = store.get();
+  root.innerHTML = `
+    <div class="stack">
+      <section class="hero">
+        <div class="eyebrow">Teacher view</div>
+        <h1 style="margin-top:4px">As-salamu alaykum, ${esc(s.profile?.name || '')}</h1>
+        <div class="small muted">Welcome to the Recite With Me academy.</div>
+      </section>
+      <div id="academyStatus"></div>
+      ${lockedNote()}
+      <div class="card stack-s"><h2>Meanwhile</h2>
+        <a class="list-item" href="#/mushaf" style="text-decoration:none;color:inherit"><div class="grow"><h3>Mushaf</h3><div class="xs muted">Listen with ayah highlighting and repeat</div></div></a>
+        <a class="list-item" href="#/adhkar" style="text-decoration:none;color:inherit"><div class="grow"><h3>Adhkar</h3><div class="xs muted">Morning and evening remembrance</div></div></a>
+      </div>
+    </div>`;
+  fillAcademy(root);
+}
+
 export function teacherHome(root) {
+  if (isCloud() && !teacherApproved()) {
+    lockedHome(root);
+    refreshApproval().then((ok) => { if (ok && alive(root)) teacherHome(root); }).catch(() => {});
+    return;
+  }
+  if (isCloud()) refreshApproval().then((ok) => { if (!ok && alive(root)) lockedHome(root); }).catch(() => {});
   const s = store.get();
   const cloudOn = isCloud();
   root.innerHTML = `

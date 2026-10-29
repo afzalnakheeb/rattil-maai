@@ -145,6 +145,9 @@ export function cleanApplication(a) {
     hours_per_week: int(a.hours_per_week, 5, 1, 80), phone: str(a.phone, 30).replace(/[^\d+ ()-]/g, ''),
     status: oneOf(a.status, ['pending', 'approved', 'declined'], 'pending'),
     admin_note: str(a.admin_note, 600), created_at: str(a.created_at, 40), reviewed_at: a.reviewed_at ? str(a.reviewed_at, 40) : null,
+    recitation_path: str(a.recitation_path, 200).replace(/[^\w\-./]/g, ''),
+    recitation_surah: a.recitation_surah == null ? null : int(a.recitation_surah, 1, 1, 114),
+    recitation_seconds: a.recitation_seconds == null ? null : int(a.recitation_seconds, 0, 0, 3600),
   };
 }
 

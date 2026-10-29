@@ -90,6 +90,7 @@ function rowOut(r, uid) {
     review: rv ? { ...rv.data, teacherId: rv.teacher_id, teacher: prof(rv.teacher_id)?.name || '', updated: Date.parse(rv.updated_at) } : null, synced: true,
   };
 }
+const approvedTeacher = (uid) => db.teachers.some((t) => t.user_id === uid) && db.apps.some((a) => a.user_id === uid && a.status === 'approved');
 const visible = (r, uid) => r.owner_id === uid || r.student_id === uid || r.teacher_id === uid || teacherOf(uid, r.student_id);
 function callOut(c) { return { ...c, teacher: pub(prof(c.teacher_id)), student: pub(prof(c.student_id)) }; }
 
@@ -109,6 +110,7 @@ const api = {
   pushState(ctx, uid, [data]) { const at = iso(); db.state[uid] = { data, updated_at: at }; return at; },
   saveSession(ctx, uid, [s, audio]) {
     if (s.studentId && s.studentId !== uid && !teacherOf(uid, s.studentId)) return { __error: 'rls' };
+    if (s.kind !== 'practice' && !approvedTeacher(uid)) return { __error: 'rls' };
     let audioPath = s.audioPath || null;
     if (audio && !audioPath) { audioPath = `${s.studentId || uid}/${s.id}.webm`; db.files[audioPath] = audio; }
     const row = { id: s.id, owner_id: uid, student_id: s.studentId || null, teacher_id: s.teacherId || null, kind: s.kind, title: s.title, data: { ...s, audioPath }, audio_path: audioPath, created_at: new Date(s.created).toISOString() };
@@ -121,7 +123,7 @@ const api = {
   audioUrl(ctx, uid, [p]) { const f = db.files[p]; return f ? `data:${f.type};base64,${f.b64}` : null; },
   saveReview(ctx, uid, [id, data]) {
     const s = db.sessions.find((x) => x.id === id);
-    if (!s || !teacherOf(uid, s.student_id)) return { __error: 'rls' };
+    if (!s || !teacherOf(uid, s.student_id) || !approvedTeacher(uid)) return { __error: 'rls' };
     db.reviews = db.reviews.filter((x) => !(x.session_id === id && x.teacher_id === uid)).concat({ session_id: id, teacher_id: uid, data, updated_at: iso() });
     return true;
   },
@@ -130,12 +132,13 @@ const api = {
   joinTeacher(ctx, uid, [c]) {
     const t = db.profiles.find((p) => p.invite_code === String(c).toUpperCase() && p.role === 'teacher');
     if (!t) return { __error: 'No teacher has this code' };
+    if (!approvedTeacher(t.id)) return { __error: 'This teacher is not yet approved by the academy' };
     if (!teacherOf(t.id, uid)) db.links.push({ teacher_id: t.id, student_id: uid, created_at: iso() });
     return { id: t.id, name: t.name };
   },
   unlink(ctx, uid, [t, s]) { db.links = db.links.filter((l) => !(l.teacher_id === t && l.student_id === s)); return true; },
   startCall(ctx, uid, [sid, portions]) {
-    if (!teacherOf(uid, sid)) return { __error: 'rls' };
+    if (!teacherOf(uid, sid) || !approvedTeacher(uid)) return { __error: 'rls' };
     const c = { id: uuid(), teacher_id: uid, student_id: sid, status: 'ringing', portions, created_at: iso(), ended_at: null };
     db.calls.push(c);
     emit([...pagesOf(uid), ...pagesOf(sid)], { kind: 'calls', row: c, type: 'INSERT' });
@@ -163,6 +166,8 @@ const api = {
     if (!admins.some((x) => x.role === 'owner' && x.active)) { admins.splice(0, admins.length, ...JSON.parse(before)); return { __error: 'There must be at least one active owner' }; }
     return true;
   },
+  amIApprovedTeacher(ctx, uid) { return approvedTeacher(uid); },
+  uploadRecitation(ctx, uid, [audio]) { const p = `${uid}/application-${Date.now()}.webm`; db.files[p] = audio; return p; },
   myApplication(ctx, uid) { return db.apps.find((x) => x.user_id === uid) || null; },
   submitApplication(ctx, uid, [a]) {
     let x = db.apps.find((y) => y.user_id === uid);
@@ -176,6 +181,7 @@ const api = {
   reviewApplication(ctx, uid, [id, decision, note, cap]) {
     if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' };
     const a = db.apps.find((x) => x.id === id); if (!a) return { __error: 'Application not found' };
+    if (decision === 'approved' && !a.recitation_path) return { __error: 'A recitation test is needed before approval' };
     Object.assign(a, { status: decision, admin_note: note || '', reviewed_at: iso() });
     if (decision === 'approved') {
       db.teachers = db.teachers.filter((t) => t.user_id !== a.user_id).concat({ user_id: a.user_id, name: a.name, country: a.country, gender: a.gender, languages: a.languages, years_experience: a.years_experience, ijazah: a.ijazah, qualifications: a.qualifications, teaches: a.teaches, bio: a.bio, availability: a.availability, capacity: cap, accepting: true, approved_at: iso() });
@@ -192,7 +198,7 @@ const api = {
   listRequests(ctx, uid) { if (!api.amIAdmin(ctx, uid)) return []; return db.requests.map((r) => ({ ...r, email: prof(r.student_id)?.email || '' })); },
   assignTeacher(ctx, uid, [s, t]) {
     if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' };
-    if (!db.teachers.some((x) => x.user_id === t)) return { __error: 'Not an approved teacher' };
+    if (!approvedTeacher(t)) return { __error: 'Not an approved teacher' };
     if (!teacherOf(t, s)) db.links.push({ teacher_id: t, student_id: s, created_at: iso() });
     const r = db.requests.find((x) => x.student_id === s); if (r) Object.assign(r, { status: 'assigned', teacher_id: t, assigned_at: iso() });
     return true;
@@ -353,9 +359,21 @@ try {
   await tp.waitForSelector('#appForm');
   check('Choosing Teacher opens the academy application form', true);
   await tp.goto(BASE + '#/');
-  await tp.waitForSelector('text=Your class code');
+  await tp.waitForSelector('.locked-note');
+  check('An unapproved teacher cannot teach (no class code, no students)', (await tp.locator('#code, #students').count()) === 0);
   await tp.waitForSelector('#academyStatus .card');
   check('Teacher home invites the teacher to apply to the academy', /Teach with the academy/.test(await tp.textContent('#academyStatus')));
+  await tp.goto(BASE + '#/live');
+  await tp.waitForSelector('.locked-note');
+  check('Teaching pages are closed before approval', true);
+  // The academy approves Ustadh Ahmed (the full apply -> approve flow is tested in the academy section).
+  const ahmedId = db.profiles.find((p) => p.email === 'ustadh.ahmed@gmail.com').id;
+  db.apps.push({ id: uuid(), user_id: ahmedId, name: 'Ustadh Ahmed', status: 'approved', languages: ['ar', 'en'], gender: 'male', years_experience: 15, teaches: ['hifz', 'tajweed'], recitation_path: `${ahmedId}/application.webm`, admin_note: '', created_at: iso() });
+  db.teachers.push({ user_id: ahmedId, name: 'Ustadh Ahmed', country: 'UAE', gender: 'male', languages: ['ar', 'en'], years_experience: 15, ijazah: '', qualifications: '', teaches: ['hifz', 'tajweed'], bio: '', availability: '', capacity: 20, accepting: true, approved_at: iso() });
+  await tp.goto(BASE + '#/mushaf');
+  await tp.goto(BASE + '#/');
+  await tp.waitForSelector('text=Your class code');
+  check('After approval the class code and students open', true);
   const classCode = (await tp.textContent('#code')).trim();
   check('Teacher gets a class code', /^[A-Z0-9]{6}$/.test(classCode), classCode);
   await shot(tp, '09-teacher-home');
@@ -562,9 +580,27 @@ try {
   await ap.fill('#aIjazah', 'Ijazah in Hafs from Jamia Ashrafia, Lahore');
   await ap.fill('#aBio', 'I teach children and sisters with patience. <script>x</script>');
   await ap.fill('#aAvail', 'Weekdays after Asr (GMT+5)');
+  check('Application explains the recitation test', /Your recitation test/.test(await ap.textContent('#reciteTest')) && /tajweed/.test(await ap.textContent('#reciteTest')));
+  await ap.waitForFunction(() => document.querySelectorAll('#rcSurah option').length > 1);
+  await ap.selectOption('#rcSurah', '1');
+  await ap.click('#appForm button[type=submit]');
+  await ap.waitForSelector('text=Record your recitation test before sending');
+  check('The application cannot be sent without a recitation', !db.apps.some((x) => x.name === 'Maryam Khan'));
+  await ap.waitForFunction(() => document.querySelectorAll('#rcSurah option').length > 1);
+  await ap.selectOption('#rcSurah', '1');
+  await ap.evaluate(() => { window.__testMinRec = 1; });
+  await ap.click('#recStart');
+  await ap.waitForSelector('#recStop');
+  await ap.waitForTimeout(1800);
+  await ap.click('#recStop');
+  await ap.waitForSelector('#recBox audio');
+  await ap.locator('#reciteTest').screenshot({ path: path.join(OUT, '44-recite-test.png') });
+  check('Teacher records the surah and can listen back', true);
   await ap.click('#appForm button[type=submit]');
   await ap.waitForSelector('text=Under review');
-  check('Teacher application is sent and shows "Under review"', db.apps.length === 1 && db.apps[0].years_experience === 12 && db.apps[0].languages.join() === 'ur,ar,en', JSON.stringify(db.apps[0] || {}).slice(0, 160));
+  const mApp = db.apps.find((x) => x.name === 'Maryam Khan');
+  check('Recitation uploads with the application', !!mApp?.recitation_path && !!db.files[mApp.recitation_path]?.size && mApp.recitation_surah === 1);
+  check('Teacher application is sent and shows "Under review"', !!mApp && mApp.years_experience === 12 && mApp.languages.join() === 'ur,ar,en', JSON.stringify(mApp || {}).slice(0, 160));
   await shot(ap, '40-apply');
   check('No sideways scrolling on the application form', await noOverflow(ap));
 
@@ -606,10 +642,13 @@ try {
   const appTxt = await adm.textContent('[data-app]');
   check('Application shows experience, languages and ijazah', /12 years/.test(appTxt) && /Urdu/.test(appTxt) && /Jamia Ashrafia/.test(appTxt));
   check('Application text is escaped (no injected script)', (await adm.locator('[data-app] script').count()) === 0 && /<script>x<\/script>/.test(appTxt));
+  await adm.click('[data-app] [data-listen]');
+  await adm.waitForSelector('[data-app] audio');
+  check('Admin can listen to the recitation before approving', /Recitation test/.test(await adm.textContent('[data-app]')));
   await adm.fill('[data-app] input[id^="cap-"]', '8');
   await adm.click('[data-review="approved"]');
   await adm.waitForSelector('text=Approved. The teacher is now verified.');
-  check('Approving makes a verified teacher with the capacity set', db.teachers.length === 1 && db.teachers[0].capacity === 8);
+  check('Approving makes a verified teacher with the capacity set', db.teachers.some((t) => t.name === 'Maryam Khan' && t.capacity === 8));
   await adm.click('[data-tab="students"]');
   await adm.waitForSelector('[data-req] [data-assign]');
   const reqTxt = await adm.textContent('[data-req]');
@@ -622,7 +661,7 @@ try {
   check('Assigning links the student to the teacher', db.links.some((l) => l.teacher_id === maryamId && l.student_id === aishaId));
   await adm.click('[data-tab="teachers"]');
   await adm.waitForSelector('.teacher-card');
-  check('Teacher card shows 1 of 8 students', /1 of 8 students/.test(await adm.textContent('.teacher-card')));
+  check('Teacher card shows 1 of 8 students', /1 of 8 students/.test(await adm.textContent('.teacher-card:has-text("Maryam Khan")')));
   check('No sideways scrolling on the admin panel', await noOverflow(adm));
 
   const sp2 = await newPage({ width: 390, height: 844 }, { email: 'bilal.student@gmail.com', name: 'Bilal' });

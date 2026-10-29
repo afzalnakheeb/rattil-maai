@@ -7,9 +7,13 @@ import { esc, loading, errorBox, toast, alive, fmtDate } from '../ui.js';
 import { icons } from '../icons.js';
 import { LANGUAGES, TEACHES, langName, matchTeachers } from '../clean.js';
 import { teacherCard } from './apply.js';
+import { getMeta } from '../quran.js';
 
 const TABS = [['overview', 'Overview'], ['applications', 'Applications'], ['teachers', 'Teachers'], ['students', 'Students waiting'], ['admins', 'Admins']];
 const AGE = { child: 'Child', teen: 'Teenager', adult: 'Adult' };
+let SURAHS = {};
+getMeta().then((m) => { SURAHS = Object.fromEntries(m.surahs.map((x) => [x.number, x.english])); }).catch(() => {});
+const surahName = (n) => SURAHS[n] || '';
 const when = (t) => { const n = Date.parse(t); return Number.isFinite(n) ? fmtDate(n) : ''; };
 
 export default async function adminView(root, params) {
@@ -106,6 +110,12 @@ export default async function adminView(root, params) {
           ${a.qualifications ? `<p class="small"><b>Studies:</b> ${esc(a.qualifications)}</p>` : ''}
           ${a.bio ? `<p class="small"><b>About:</b> ${esc(a.bio)}</p>` : ''}
           ${a.availability ? `<p class="small"><b>Free:</b> ${esc(a.availability)}</p>` : ''}
+          <div class="recitation-check ${a.recitation_path ? '' : 'missing'}">
+            ${a.recitation_path ? `<div class="spread"><b>Recitation test</b><span class="xs muted">${a.recitation_surah ? `Surah ${a.recitation_surah}${surahName(a.recitation_surah) ? ` · ${esc(surahName(a.recitation_surah))}` : ''}` : ''}${a.recitation_seconds ? ` · ${Math.floor(a.recitation_seconds / 60)}:${String(a.recitation_seconds % 60).padStart(2, '0')}` : ''}</span></div>
+              <div data-audio="${esc(a.recitation_path)}"><button class="btn sm outline" type="button" data-listen>${icons.play} Listen</button></div>
+              <p class="xs muted">Check: makharij, madd lengths, ghunnah, idgham and ikhfa, waqf, and that it is from memory without mistakes.</p>`
+              : '<b class="text-red">No recitation test attached.</b> <span class="xs muted">Ask the teacher to record one before approving.</span>'}
+          </div>
           ${a.phone ? `<p class="small"><b>WhatsApp:</b> <a href="https://wa.me/${esc(a.phone.replace(/[^\d]/g, ''))}" target="_blank" rel="noopener">${esc(a.phone)}</a></p>` : ''}
           ${a.admin_note ? `<p class="xs muted">Note: ${esc(a.admin_note)}</p>` : ''}
           <div class="row-wrap admin-actions">
@@ -113,7 +123,7 @@ export default async function adminView(root, params) {
             <div class="field" style="flex:1 1 220px"><label for="note-${esc(a.id)}">Note to the teacher (optional)</label><input class="input" id="note-${esc(a.id)}" maxlength="600" value=""></div>
           </div>
           <div class="row-wrap">
-            ${a.status !== 'approved' ? `<button class="btn sm" type="button" data-review="approved">${icons.check} Approve</button>` : ''}
+            ${a.status !== 'approved' ? `<button class="btn sm" type="button" data-review="approved" ${a.recitation_path ? '' : 'disabled title="Needs a recitation test"'}>${icons.check} Approve</button>` : ''}
             ${a.status !== 'declined' ? `<button class="btn ghost sm" type="button" data-review="declined">Decline</button>` : ''}
             ${a.status !== 'pending' ? `<button class="btn ghost sm" type="button" data-review="pending">Back to review</button>` : ''}
           </div>
@@ -196,6 +206,14 @@ export default async function adminView(root, params) {
   }
 
   function wire() {
+    root.querySelectorAll('[data-listen]').forEach((b) => b.addEventListener('click', async () => {
+      const wrap = b.closest('[data-audio]');
+      b.disabled = true;
+      try {
+        const src = await cloud.audioUrl(wrap.dataset.audio);
+        wrap.innerHTML = `<audio controls autoplay preload="metadata" src="${esc(src)}"></audio>`;
+      } catch { b.disabled = false; toast('The recording could not load.'); }
+    }));
     root.querySelector('#addAdmin')?.addEventListener('submit', (e) => {
       e.preventDefault();
       const email = root.querySelector('#adEmail').value.trim().toLowerCase();

@@ -229,7 +229,8 @@ pages['teach/index.html'] = page('/teach/', 'en',
 <h2>How it works</h2>
 <ul>
 <li><b>Apply</b> with your Google account: your languages, years of teaching, ijazah and sanad, studies, a short bio and the times you are free.</li>
-<li><b>We review</b> every application. Approved teachers get a verified profile that students and parents can see.</li>
+<li><b>Record your recitation test</b> in the form: one surah from memory, at least 10 ayahs, with full tajweed, in a quiet room.</li>
+<li><b>We review</b> every application and listen to every recitation. Teaching opens only after approval, and approved teachers get a verified profile that students and parents can see.</li>
 <li><b>Students are matched</b> to you by language, by teacher gender if the family asks, and by the number of students you want.</li>
 <li><b>Teach live</b> on free video in the browser. The AI listens on the student's phone and shows you what it hears; you confirm, add your own marks and grade out of 100.</li>
 <li>Every session is <b>recorded with your marks</b>, and parents get weekly and monthly reports.</li>

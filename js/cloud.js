@@ -423,3 +423,17 @@ export async function setAdmin(email, role, active) {
   need();
   check(await sb.rpc('admin_set', { admin_email: email, new_role: role, is_active: active }));
 }
+
+// ---- Teacher approval and the application recitation ----
+export async function amIApprovedTeacher() {
+  if (!sb || !me) return false;
+  try { return !!check(await sb.rpc('am_i_approved_teacher')); } catch { return false; }
+}
+
+export async function uploadRecitation(blob) {
+  need();
+  const type = mime(blob);
+  const path = `${me.id}/application-${Date.now()}.${ext(type)}`;
+  check(await sb.storage.from('recordings').upload(path, blob, { contentType: type, upsert: false }));
+  return path;
+}

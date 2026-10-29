@@ -97,3 +97,8 @@ export const assignTeacher = (s, t) => rpc('assignTeacher', s, t);
 export const myAdminRole = () => rpc('myAdminRole');
 export const listAdmins = () => rpc('listAdmins');
 export const setAdmin = (e, r, a) => rpc('setAdmin', e, r, a);
+export const amIApprovedTeacher = () => rpc('amIApprovedTeacher');
+export async function uploadRecitation(blob) {
+  const audio = { type: (blob.type || 'audio/webm').split(';')[0], size: blob.size, b64: await b64(blob) };
+  return rpc('uploadRecitation', audio);
+}
