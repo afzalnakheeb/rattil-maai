@@ -403,3 +403,23 @@ export async function assignTeacher(studentId, teacherId) {
   need();
   check(await sb.rpc('admin_assign', { student: studentId, teacher: teacherId }));
 }
+
+// ---- Who runs the academy: owners add or switch off admins ----
+export async function myAdminRole() {
+  if (!sb || !me) return null;
+  try { const r = check(await sb.rpc('my_admin_role')); return r === 'owner' || r === 'admin' ? r : null; } catch { return null; }
+}
+
+export async function listAdmins() {
+  need();
+  const rows = check(await sb.rpc('admin_list')) || [];
+  return rows.map((r) => ({
+    email: String(r.email || '').slice(0, 200), role: r.role === 'owner' ? 'owner' : 'admin', active: !!r.active,
+    added_by: String(r.added_by || '').slice(0, 200), added_at: String(r.added_at || ''), name: String(r.name || '').slice(0, 120), signed_up: !!r.signed_up,
+  }));
+}
+
+export async function setAdmin(email, role, active) {
+  need();
+  check(await sb.rpc('admin_set', { admin_email: email, new_role: role, is_active: active }));
+}

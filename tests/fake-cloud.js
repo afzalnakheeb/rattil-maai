@@ -94,3 +94,6 @@ export const requestTeacher = (r) => rpc('requestTeacher', r);
 export const cancelTeacherRequest = () => rpc('cancelTeacherRequest');
 export const listRequests = () => rpc('listRequests');
 export const assignTeacher = (s, t) => rpc('assignTeacher', s, t);
+export const myAdminRole = () => rpc('myAdminRole');
+export const listAdmins = () => rpc('listAdmins');
+export const setAdmin = (e, r, a) => rpc('setAdmin', e, r, a);

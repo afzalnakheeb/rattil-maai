@@ -64,7 +64,8 @@ const BASE = `http://127.0.0.1:${server.address().port}/`;
 
 // ---------- fake cloud (one shared database for every browser window) ----------
 const db = { profiles: [], links: [], state: {}, sessions: [], reviews: [], calls: [], files: {}, apps: [], teachers: [], requests: [] };
-const ADMIN_EMAILS = ['admin@gmail.com'];
+const admins = [{ email: 'admin@gmail.com', role: 'owner', active: true, added_by: '', added_at: new Date().toISOString() }];
+const adminRole = (uid) => { const e = (prof(uid)?.email || '').toLowerCase(); const a = admins.find((x) => x.email === e && x.active); return a ? a.role : null; };
 const ctxUser = new Map();
 const ctxIdentity = new Map();
 const rooms = new Map();
@@ -149,7 +150,19 @@ const api = {
     return true;
   },
   // Academy (mirrors the Supabase policies and admin functions)
-  amIAdmin(ctx, uid) { return ADMIN_EMAILS.includes(prof(uid).email); },
+  amIAdmin(ctx, uid) { return !!adminRole(uid); },
+  myAdminRole(ctx, uid) { return adminRole(uid); },
+  listAdmins(ctx, uid) { if (!adminRole(uid)) return { __error: 'Admins only' }; return admins.map((a) => { const p = db.profiles.find((x) => x.email === a.email); return { ...a, name: p?.name || '', signed_up: !!p }; }); },
+  setAdmin(ctx, uid, [email, role, active]) {
+    if (adminRole(uid) !== 'owner') return { __error: 'Only an owner can manage admins' };
+    const e = String(email).trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return { __error: 'Enter a valid email address' };
+    const before = JSON.stringify(admins);
+    const a = admins.find((x) => x.email === e);
+    if (a) Object.assign(a, { role, active }); else admins.push({ email: e, role, active, added_by: prof(uid).email, added_at: new Date().toISOString() });
+    if (!admins.some((x) => x.role === 'owner' && x.active)) { admins.splice(0, admins.length, ...JSON.parse(before)); return { __error: 'There must be at least one active owner' }; }
+    return true;
+  },
   myApplication(ctx, uid) { return db.apps.find((x) => x.user_id === uid) || null; },
   submitApplication(ctx, uid, [a]) {
     let x = db.apps.find((y) => y.user_id === uid);
@@ -614,6 +627,39 @@ try {
   await ap.goto(BASE + '#/');
   await ap.waitForSelector('text=Aisha', { timeout: 8000 }).catch(() => {});
   check('The teacher sees the assigned student on Home', /Aisha/.test(await ap.textContent('#view')));
+  // ---------- Admins: only listed Google accounts; only owners manage the list ----------
+  await adm.goto(BASE + '#/admin?tab=admins');
+  await adm.waitForSelector('#addAdmin');
+  check('Owner sees the Admins tab with the add form', /Owner/.test(await adm.textContent('#pane')));
+  await adm.fill('#adEmail', 'Helper@Gmail.com');
+  await adm.click('#addAdmin button[type=submit]');
+  await adm.waitForSelector('[data-admin="helper@gmail.com"]');
+  check('Owner adds a new admin by Google email', admins.some((x) => x.email === 'helper@gmail.com' && x.role === 'admin' && x.active));
+  const hp = await newPage({ width: 390, height: 844 }, { email: 'helper@gmail.com', name: 'Helper' });
+  await hp.goto(BASE);
+  await hp.click('#google');
+  await hp.waitForSelector('#roleForm');
+  await hp.click('#roleForm button[type=submit]');
+  await hp.waitForSelector('#planForm');
+  await hp.click('#planForm button[type=submit]');
+  await hp.goto(BASE + '#/admin?tab=admins');
+  await hp.waitForSelector('.admin-tabs');
+  check('The added admin can open the panel', true);
+  check('An admin (not owner) cannot change the admin list', (await hp.locator('#addAdmin, [data-admin-off]').count()) === 0);
+  await adm.goto(BASE + '#/admin?tab=admins');
+  await adm.waitForSelector('[data-admin="helper@gmail.com"] [data-admin-off]');
+  adm.once('dialog', (d) => d.accept());
+  await adm.click('[data-admin="helper@gmail.com"] [data-admin-off]');
+  await adm.waitForSelector('[data-admin="helper@gmail.com"] [data-admin-on]');
+  await hp.goto(BASE + '#/');
+  await hp.goto(BASE + '#/admin');
+  await hp.waitForSelector('text=This page is for academy admins.');
+  check('Removing access locks the admin out at once', true);
+  adm.once('dialog', (d) => d.accept());
+  await adm.click('[data-admin="admin@gmail.com"] [data-admin-off]');
+  await adm.waitForTimeout(600);
+  check('The last owner cannot be removed', admins.some((x) => x.email === 'admin@gmail.com' && x.active && x.role === 'owner'));
+  await hp.context().close();
   await Promise.all([ap.context().close(), sp.context().close(), adm.context().close()]);
 } catch (e) {
   check('Run finished without exceptions', false, String(e).split('\n')[0]);
