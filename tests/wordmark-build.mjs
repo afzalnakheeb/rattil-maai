@@ -1,28 +1,31 @@
+// Bilingual wordmark: English line and Arabic line of equal width.
+// Arabic at 1.25x with balanced kashida (3 + 3), words pinned to the English ink edges.
 import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
 const S = process.argv[2], FONT = S + '/gfonts/ofl/alexandria/Alexandria[wght].ttf';
-const EN_W = 800, AR_W = 600, GAP = 0.45;
+const EN_W = 800, AR_W = 700, K = 1.25, A = 3, M = 3, LINE_GAP = 0.5, PAD = 8;
 const face = `@font-face{font-family:A;src:url(data:font/ttf;base64,${fs.readFileSync(FONT).toString('base64')});font-weight:100 900}`;
 const b = await chromium.launch(); const p = await b.newPage();
 await p.setContent(`<html><head><style>${face}</style></head><body></body></html>`);
-await p.evaluate(() => Promise.all([600, 800].map((w) => document.fonts.load(`${w} 100px A`))));
-const L = await p.evaluate(([EN_W, AR_W, GAP]) => {
+await p.evaluate(() => Promise.all([700, 800].map((w) => document.fonts.load(`${w} 100px A`))));
+const L = await p.evaluate(([EN_W, AR_W, K, A, M, LINE_GAP]) => {
   const c = document.createElement('canvas').getContext('2d');
   const ink = (t, w, s) => { c.font = `${w} ${s}px A`; const m = c.measureText(t); return { l: -m.actualBoundingBoxLeft, r: m.actualBoundingBoxRight, t: -m.actualBoundingBoxAscent, b: m.actualBoundingBoxDescent }; };
-  const EN = 'Recite With Me', AR = 'رتّل معي';
-  const e = ink(EN, EN_W, 100); const W = e.r - e.l, eh = e.b - e.t;
-  const a0 = ink(AR, AR_W, 100); const as = 100 * W / (a0.r - a0.l); const a = ink(AR, AR_W, as);
-  const g = GAP * eh;
-  return { W, H: eh + g + (a.b - a.t), eh, ex: -e.l, ey: -e.t, ax: -a.l, ay: eh + g - a.t, as };
-}, [EN_W, AR_W, GAP]);
-const pad = 8;
-for (const [name, en, ar] of [['light', '#17231E', '#1F6A50'], ['dark', '#EEE8D9', '#6CC39E'], ['reverse', '#F7F3EA', '#E6D199']]) {
-  const W = L.W + 2 * pad, H = L.H + 2 * pad;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${-pad} ${-pad} ${W} ${H}" style="display:block"><text x="${L.ex}" y="${L.ey}" font-family="A" font-weight="${EN_W}" font-size="100" fill="${en}">Recite With Me</text><text x="${L.ax}" y="${L.ay}" font-family="A" font-weight="${AR_W}" font-size="${L.as}" fill="${ar}">رتّل معي</text></svg>`;
-  await p.setContent(`<html><head><style>${face}@page{margin:0;size:${W}px ${H}px}html,body{margin:0;padding:0}</style></head><body>${svg}</body></html>`);
-  await p.evaluate(() => Promise.all([600, 800].map((w) => document.fonts.load(`${w} 100px A`))));
-  await p.pdf({ path: `${S}/wm/wm-${name}.pdf`, width: `${W}px`, height: `${H}px`, printBackground: false });
+  const k = 'ـ', EN = 'Recite With Me';
+  const e = ink(EN, EN_W, 100), W = e.r - e.l, eh = e.b - e.t, as = 100 * K;
+  const w1 = 'رتّ' + k.repeat(A) + 'ل', w2 = 'م' + k.repeat(M) + 'ع' + k.repeat(M) + 'ي';
+  const i1 = ink(w1, AR_W, as), i2 = ink(w2, AR_W, as);
+  const top = Math.min(i1.t, i2.t), bot = Math.max(i1.b, i2.b), g = LINE_GAP * eh;
+  return { W, H: eh + g + (bot - top), as, w1, w2, en: { x: -e.l, y: -e.t }, a1: { x: W - i1.r, y: eh + g - top }, a2: { x: -i2.l, y: eh + g - top } };
+}, [EN_W, AR_W, K, A, M, LINE_GAP]);
+const VARIANTS = { light: ['#1F6A50', '#A8812F'], dark: ['#7FCBA9', '#D9BB72'], reverse: ['#F7F3EA', '#E6D199'] };
+for (const [name, [en, ar]] of Object.entries(VARIANTS)) {
+  const Wp = L.W + 2 * PAD, Hp = L.H + 2 * PAD;
+  const t = (x, y, w, s, f, txt) => `<text x="${x}" y="${y}" font-family="A" font-weight="${w}" font-size="${s}" fill="${f}">${txt}</text>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Wp}" height="${Hp}" viewBox="${-PAD} ${-PAD} ${Wp} ${Hp}" style="display:block">${t(L.en.x, L.en.y, EN_W, 100, en, 'Recite With Me')}${t(L.a1.x, L.a1.y, AR_W, L.as, ar, L.w1)}${t(L.a2.x, L.a2.y, AR_W, L.as, ar, L.w2)}</svg>`;
+  await p.setContent(`<html><head><style>${face}@page{margin:0;size:${Wp}px ${Hp}px}html,body{margin:0;padding:0}</style></head><body>${svg}</body></html>`);
+  await p.evaluate(() => Promise.all([700, 800].map((w) => document.fonts.load(`${w} 100px A`))));
+  await p.pdf({ path: `${S}/wm/wm2-${name}.pdf`, width: `${Wp}px`, height: `${Hp}px`, printBackground: false });
 }
-fs.writeFileSync(`${S}/wm/layout.json`, JSON.stringify(L));
+console.log(JSON.stringify({ W: L.W, H: L.H, ratio: L.W / L.H }));
 await b.close();
-console.log(JSON.stringify(L));

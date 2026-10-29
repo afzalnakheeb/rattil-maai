@@ -186,8 +186,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .wm-dark { display: none; }
 :root[data-theme="dark"] .wm-light { display: none; }
 :root[data-theme="dark"] .wm-dark { display: block; }
-.brand img.wordmark { height: 54px; width: auto; border-radius: 0; box-shadow: none; }
-.logo-big img.wordmark { width: min(290px, 76vw); height: auto; margin: 6px 0 2px; border-radius: 0; box-shadow: none; }
+.brand img.wordmark { height: 50px; width: auto; border-radius: 0; box-shadow: none; }
+.logo-big img.wordmark { width: min(300px, 78vw); height: auto; margin: 6px 0 2px; border-radius: 0; box-shadow: none; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
 .brand-name { font-family: var(--display); font-weight: 700; font-size: 16.5px; letter-spacing: -0.3px; white-space: nowrap; }
 .brand-ar { font-family: var(--ar-display); color: var(--green); font-weight: 800; font-size: 15.5px; line-height: 1.25; white-space: nowrap; direction: rtl; align-self: flex-start; }
@@ -510,7 +510,7 @@ audio { width: 100%; }
 .code-box b { font-family: var(--display); font-size: 24px; letter-spacing: 5px; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
 
 @media (max-width: 380px) {
-  .brand .wordmark { height: 48px; }
+  .brand img.wordmark { height: 42px; }
   .mushaf-text { font-size: 22px; }
   .words { font-size: 23px; }
   .rubric-row { grid-template-columns: 100px minmax(0, 1fr) 48px; }

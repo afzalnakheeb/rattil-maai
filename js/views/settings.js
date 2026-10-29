@@ -23,8 +23,8 @@ function brandBlock() {
       <div class="logo-big">
         <img src="icons/icon.svg" alt="" width="104" height="104">
         <h1 class="sr-only">Recite With Me · رتّل معي</h1>
-        <img class="wordmark wm-light" src="icons/wordmark-light.svg" alt="" width="280" height="157">
-        <img class="wordmark wm-dark" src="icons/wordmark-dark.svg" alt="" width="280" height="157">
+        <img class="wordmark wm-light" src="icons/wordmark-light.svg" alt="" width="290" height="126">
+        <img class="wordmark wm-dark" src="icons/wordmark-dark.svg" alt="" width="290" height="126">
         <div class="ornament" aria-hidden="true">${icons.star.replace('<svg', '<svg width="12" height="12"')}</div>
         <p class="muted tagline">Memorize the Quran to the standard of al-Haram and an-Nabawi, with a daily plan, an AI that listens, and teachers who check you.</p>
       </div>`;
