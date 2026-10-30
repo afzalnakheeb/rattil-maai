@@ -10,7 +10,7 @@ import { renderWords } from './words.js';
 import { markingPanel, paintMarking, wireMarking, gradeForm, avatar } from './teacher.js';
 import { speechSupported } from '../speech.js';
 import { esc, fmtTime, loading, errorBox, toast, onLeave, alive, todayKey } from '../ui.js';
-import * as plan from '../plan.js';
+import { passPlan } from '../passplan.js';
 import { icons } from '../icons.js';
 
 const STATE_LABEL = {
@@ -69,6 +69,9 @@ export default async function callView(root, params) {
 
   // A teacher who changes their mind ends the call, so the student stops ringing.
   root.querySelector('#notNow').addEventListener('click', () => { if (role === 'teacher') cloud.updateCall(call.id, { status: 'ended' }).catch(() => {}); });
+  // A teacher who leaves before joining (Back, another tab) also ends the ringing call.
+  let joinedRoom = false;
+  onLeave(root, () => { if (role === 'teacher' && !joinedRoom) cloud.updateCall(call.id, { status: 'ended' }).catch(() => {}); });
   root.querySelector('#join').addEventListener('click', async () => {
       const btn = root.querySelector('#join');
       btn.disabled = true;
@@ -83,6 +86,7 @@ export default async function callView(root, params) {
       // The user may have left while the camera was starting.
       if (!alive(root)) { stream.getTracks().forEach((t) => t.stop()); return; }
       if (stream.noCamera && root.querySelector('#camOn').checked) toast(stream.cameraBlocked ? 'The camera is blocked, so you joined with audio only.' : 'No camera found, so you joined with audio only.');
+      joinedRoom = true;
       if (role === 'teacher') await teacherRoom(root, call, stream, otherName);
       else await studentRoom(root, call, stream, otherName);
   });
@@ -310,26 +314,6 @@ async function teacherRoom(root, call, stream, studentName) {
   }
 }
 
-// When the teacher passes a portion that is in today's plan, tick it and open the next lesson.
-function passPlan(portions) {
-  const st = store.get();
-  if (!st.plan || !Array.isArray(portions)) return;
-  const key = (list) => list.map((p) => `${p.page}:${p.part}`).sort().join(',');
-  const t = plan.today(st.plan);
-  const item = ['sabaq', 'sabqi', 'manzil'].find((k) => (t[k] || []).length && key(t[k]) === key(portions));
-  if (!item) return;
-  const day = todayKey();
-  store.update((x) => {
-    x.daily[day] = x.daily[day] || {};
-    if (x.daily[day][item]) return;
-    x.daily[day][item] = true;
-    if (item === 'sabaq') plan.completeSabaq(x.plan);
-    if (item === 'manzil') plan.completeManzil(x.plan);
-  });
-  store.touchStreak(day);
-  toast(item === 'sabaq' ? 'Passed. Your next lesson is open.' : 'Passed and ticked in today\'s plan.');
-}
-
 // ===================== Student =====================
 async function studentRoom(root, call, stream, teacherName) {
   let hide = store.get().settings.hideText !== false;
@@ -412,6 +396,15 @@ async function studentRoom(root, call, stream, teacherName) {
   link.on('marks', ({ list }) => session.applyMarks(list));
   link.on('sync', async (d) => {
     if (d.progress && !session.started) session.applyProgress({ ...d.progress, run: false });
+    // The teacher's page restarted (reload) and lost its state: pause here too and wait for Start,
+    // keeping this phone's progress so the teacher sees where the student was.
+    if (!d.started && session.started && d.phase !== 'grade') {
+      if (session.running) session.pause();
+      setPhase('paused', `${teacherName} reconnected. They will start the recitation again.`);
+      link.send('state', { speech: speechSupported() });
+      sendProgress();
+      return;
+    }
     session.applyMarks(d.marks || []);
     if (d.phase === 'grade') setPhase('grading', `${teacherName} is grading your recitation…`);
     else if (d.running) { await startListening(); setPhase('reciting', 'Recite now. Continue where you stopped.'); }

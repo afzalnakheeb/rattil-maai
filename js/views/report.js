@@ -99,7 +99,7 @@ export default async function reportView(root, params) {
 
   root.innerHTML = `
     <style>
-      .rp-bar { fill: var(--primary); } .rp-bar.empty { fill: var(--line); }
+      .rp-bar { fill: var(--primary); } .rp-bar.empty { fill: var(--line-2, var(--line)); opacity: .9; }
       .rp-lbl { fill: var(--muted); font-size: 19px; text-anchor: middle; font-family: var(--sans); }
       .rp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
       @media (max-width: 420px) { .rp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -113,6 +113,11 @@ export default async function reportView(root, params) {
         .view { padding: 0 !important; max-width: none !important; }
         .card, .hero { box-shadow: none !important; break-inside: avoid; }
         .card { border: 1px solid #ddd !important; }
+        /* Print in black on white: the dark summary panel would print as white on white. */
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .hero, .rp-hero { background: #fff !important; color: #111 !important; border: 1px solid #ccc !important; }
+        .hero *, .rp-hero * { color: #111 !important; }
+        .hero-stats > div, .rp-hero .hero-stats > div { background: #f3f3f3 !important; }
       }
     </style>
     <div class="stack">
@@ -211,7 +216,7 @@ export default async function reportView(root, params) {
       R.graded.length ? `Teacher grades: ${R.graded.map((g) => `${g.total}${g.decision ? ` (${g.decision})` : ''}`).join(', ')}` : '',
       ...R.graded.filter((g) => g.comment).slice(0, 3).map((g) => `Teacher: “${g.comment}”`),
       R.mistakeTotal ? `Mistakes: ${R.mistakeTotal} (${Object.entries(R.types).filter(([, n]) => n).map(([t, n]) => `${(TYPE_LABEL[t] || t).toLowerCase()} ${n}`).join(', ')})` : 'No mistakes recorded.',
-      R.topWords.length ? `Words to revise: ${R.topWords.slice(0, 6).map((w) => `${w.word} (${ref(w.surah, w.ayah)})`).join('، ')}` : '',
+      R.topWords.length ? `Words to revise: ${R.topWords.slice(0, 6).map((w) => `${w.word} (${ref(w.surah, w.ayah)})`).join(', ')}` : '',
       `Adhkar: ${SETS.map((set) => `${set.label.toLowerCase()} ${R.adhkarDays[set.id]}/${P.days}`).join(', ')}`,
     ].filter((x) => x !== '').join('\n');
     try {

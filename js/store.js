@@ -97,8 +97,9 @@ export function addSession(session) {
 export function touchStreak(day) {
   update((s) => {
     if (s.streak.last === day) return;
-    const prev = new Date(day);
-    prev.setDate(prev.getDate() - 1);
+    // Parse the local day key by its parts (new Date('YYYY-MM-DD') would be UTC midnight).
+    const [yy, mm, dd] = day.split('-').map(Number);
+    const prev = new Date(yy, mm - 1, dd - 1);
     const p = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
     s.streak.count = s.streak.last === p ? s.streak.count + 1 : 1;
     s.streak.last = day;

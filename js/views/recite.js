@@ -114,8 +114,11 @@ export default async function reciteView(root, params) {
     session.tapWord(+el.dataset.i, 'self');
   });
 
+  let micBusy = false;
   mic.addEventListener('click', async () => {
-    if (finished) return;
+    if (finished || micBusy) return;
+    micBusy = true;
+    setTimeout(() => { micBusy = false; }, 400);
     stopFix(false);
     if (session.running) {
       session.pause();

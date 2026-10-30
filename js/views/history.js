@@ -1,4 +1,5 @@
 import * as store from '../store.js';
+import { sessionMistakes } from '../report.js';
 import * as records from '../records.js';
 import { isCloud } from '../account.js';
 import { MARK_LABEL } from '../session.js';
@@ -50,7 +51,7 @@ export default async function historyView(root, params) {
       || (filter === 'teacher' ? h.kind !== 'practice' : filter === 'review' ? (h.kind === 'practice' && !h.review && h.studentId !== me) : h.kind === 'practice'));
     const week = Date.now() - 7 * 864e5;
     const recent = all.filter((h) => h.created >= week);
-    const marks = recent.flatMap((h) => [...(h.marks || []), ...(h.review?.marks || []).filter((m) => m.source === 'teacher')].filter((m) => m.status !== 'dismissed' && m.status !== 'suggested' && m.type !== 'peek'));
+    const marks = recent.flatMap((h) => sessionMistakes(h));
     const byAi = marks.filter((m) => m.source === 'ai').length;
     const byTeacher = marks.filter((m) => m.source === 'teacher').length;
     const words = {};

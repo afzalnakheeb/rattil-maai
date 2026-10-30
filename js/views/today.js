@@ -1,4 +1,5 @@
 import * as store from '../store.js';
+import { liveStreak } from '../report.js';
 import * as plan from '../plan.js';
 import { describePortions } from '../quran.js';
 import { esc, todayKey } from '../ui.js';
@@ -58,7 +59,7 @@ export default function todayView(root) {
         <h1 style="margin-top:4px">${esc(greet)}, ${esc((s.profile?.name || '').split(' ')[0])}</h1>
         <a class="small" href="#/prayer" style="color:var(--gold-2);text-decoration:none;display:inline-flex;gap:6px;align-items:center;margin-top:4px">${icons.moon.replace('<svg', '<svg width="15" height="15"')}<span>${esc(nextPrayerLine(s.settings) || 'Set your city for prayer times')}</span></a>
         <div class="hero-stats">
-          <div><b>${s.streak.count || 0}</b><span>Day streak</span></div>
+          <div><b>${liveStreak(s.streak)}</b><span>Day streak</span></div>
           <div><b>${t.memorizedCount}</b><span>${t.memorizedCount === 1 ? 'Page memorized' : 'Pages memorized'}</span></div>
           <div><b>${esc(plan.level(s.plan).short)}</b><span>Each day</span></div>
         </div>
@@ -122,6 +123,14 @@ async function fillTeacher(root) {
   let req = null;
   try { [teachers, calls] = await Promise.all([cloud.myTeachers(), cloud.openCalls()]); } catch { /* offline */ }
   if (!teachers.length) { try { req = await cloud.myTeacherRequest(); } catch { /* table not ready or offline */ } }
+  else {
+    // A teacher may have passed a lesson while this student was away: open the next one.
+    try {
+      const { applyTeacherPasses } = await import('../passplan.js');
+      const records = await import('../records.js');
+      if (applyTeacherPasses(await records.list()) && root.isConnected) { todayView(root); return; }
+    } catch { /* offline */ }
+  }
   const card = root.querySelector('#teacherCard');
   if (!card) return;
   const me = cloud.user()?.id;

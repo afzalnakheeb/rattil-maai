@@ -74,13 +74,30 @@ export class RecitationSession {
   }
 
   async start() {
-    if (this.running) return;
+    if (this.running || this.starting) return;
+    this.starting = true;
     this.running = true;
     if (this.record) {
       this.recording = await this.recorder.start(this.recordStream);
       if (!this.recording) this.onNotice('Recording is not available on this device; marks are still saved.');
     }
+    this.starting = false;
+    // Paused (or stopped) while the microphone was starting: honour that, do not start listening.
+    if (!this.running) {
+      const mr = this.recorder.mr;
+      if (mr && mr.state === 'recording') mr.pause();
+      this.started = this.started || this.recorder.startedAt || Date.now();
+      this.pausedAt = this.pausedAt || Date.now();
+      this.onUpdate();
+      return;
+    }
     this.started = this.started || this.recorder.startedAt || Date.now();
+    this._listen();
+    this.onUpdate();
+  }
+
+  _listen() {
+    if (this.listener) { this.listener.start(); return; }
     if (this.listen && speechSupported()) {
       this.listener = new Listener({
         onFinal: (t) => { this.matcher.feed(t); this.onProgress(); this.onUpdate(); },
@@ -93,7 +110,6 @@ export class RecitationSession {
       });
       this.listener.start();
     }
-    this.onUpdate();
   }
 
   async stop() {
@@ -177,7 +193,7 @@ export class RecitationSession {
     if (this.pausedAt) { this.pausedMs = (this.pausedMs || 0) + (Date.now() - this.pausedAt); this.pausedAt = 0; }
     const mr = this.recorder.mr;
     if (mr && mr.state === 'paused') mr.resume();
-    if (this.listener) this.listener.start();
+    this._listen();
     this.onUpdate();
   }
 

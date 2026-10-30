@@ -4,28 +4,36 @@
 import { ADHKAR, SETS } from './adhkar.js';
 import { LEVELS } from './plan.js';
 
-const DAY = 864e5;
 const keyOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 // offset 0 = the period ending today; 1 = the one before, and so on.
+// Days are calendar days (new Date(y, m, d + n)), so weeks that cross a clock change stay correct.
 export function period(kind = 'week', offset = 0, now = new Date()) {
   const days = kind === 'month' ? 30 : 7;
-  const end = new Date(startOfDay(now).getTime() + DAY - offset * days * DAY);
-  const from = new Date(end.getTime() - days * DAY);
-  const list = Array.from({ length: days }, (_, i) => new Date(from.getTime() + i * DAY));
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const endDay = d + 1 - offset * days;
+  const end = new Date(y, m, endDay);
+  const from = new Date(y, m, endDay - days);
+  const list = Array.from({ length: days }, (_, i) => new Date(y, m, endDay - days + i));
   return { kind, days, from, to: end, list, keys: list.map(keyOf) };
+}
+
+// The streak only counts if the last practice was today or yesterday.
+export function liveStreak(streak, now = new Date()) {
+  if (!streak || !streak.last) return 0;
+  const today = keyOf(now);
+  const yesterday = keyOf(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+  return streak.last === today || streak.last === yesterday ? (streak.count || 0) : 0;
 }
 
 const isMistake = (m) => m && m.type !== 'peek' && m.status !== 'dismissed' && m.status !== 'suggested';
 
-// All confirmed mistakes of a session: the session's own marks, plus a teacher review's marks if any.
-function sessionMistakes(s) {
-  const own = (s.marks || []).filter(isMistake);
-  const rv = (s.review?.marks || []).filter(isMistake);
-  if (!rv.length) return own;
-  // The review replaces the AI's verdict on the same practice.
-  return rv;
+// Confirmed mistakes of a session. Once a teacher has reviewed a practice, the review is the
+// verdict: AI marks the teacher dismissed are not mistakes, even when no mark is left.
+export function sessionMistakes(s) {
+  if (s.review && Array.isArray(s.review.marks)) return s.review.marks.filter(isMistake);
+  return (s.marks || []).filter(isMistake);
 }
 
 export function buildReport({ sessions = [], state = {}, kind = 'week', offset = 0, now = new Date() }) {
@@ -101,7 +109,7 @@ export function buildReport({ sessions = [], state = {}, kind = 'week', offset =
 
   return {
     period: P, sessions: list, count: list.length, byKind, minutes: Math.round(minutes), anyTime: minutes > 0, perDay, activeDays,
-    plan, pagesNew, pagesTotal: Math.floor((state.plan?.units || 0) / 2), streak: state.streak?.count || 0,
+    plan, pagesNew, pagesTotal: (state.plan?.units || 0) / 2, streak: liveStreak(state.streak),
     adhkarDays, mistakeTotal, types, topWords, topSurahs, aiAvg, graded, gradeAvg, passes, repeats,
   };
 }

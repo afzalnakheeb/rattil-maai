@@ -106,9 +106,9 @@ export default async function adhkarView(root, params) {
     }
 
     root.querySelectorAll('[data-set]').forEach((b) => b.addEventListener('click', () => { clearTimeout(advance); setId = b.dataset.set; idx = firstOpen(); render(); }));
-    root.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { idx = +b.dataset.go; render(); }));
-    root.querySelector('#prev').addEventListener('click', () => { idx = Math.max(0, idx - 1); render(); });
-    root.querySelector('#next').addEventListener('click', () => { idx = Math.min(list().length - 1, idx + 1); render(); });
+    root.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { clearTimeout(advance); idx = +b.dataset.go; render(); }));
+    root.querySelector('#prev').addEventListener('click', () => { clearTimeout(advance); idx = Math.max(0, idx - 1); render(); });
+    root.querySelector('#next').addEventListener('click', () => { clearTimeout(advance); idx = Math.min(list().length - 1, idx + 1); render(); });
     root.querySelector('#reset').addEventListener('click', () => { store.update((s) => { const k = key(); s.adhkar[k] = { ...(s.adhkar[k] || {}), [d.id]: 0 }; }); render(); });
     root.querySelector('#play')?.addEventListener('click', () => playDhikr(d));
     root.querySelector('#counter').addEventListener('click', () => {

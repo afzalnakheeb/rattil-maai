@@ -1,4 +1,5 @@
 import * as store from '../store.js';
+import { liveStreak, sessionMistakes } from '../report.js';
 import * as plan from '../plan.js';
 import * as cloud from '../cloud.js';
 import * as records from '../records.js';
@@ -32,7 +33,7 @@ function studentSummary(st) {
   const d = st.state?.data;
   if (!d?.plan) return 'No plan yet';
   const pages = Math.floor((Number(d.plan.units) || 0) / 2);
-  const streak = d.streak?.count || 0;
+  const streak = liveStreak(d.streak);
   return `${pages} ${pages === 1 ? 'page' : 'pages'} · ${streak}-day streak · active ${ago(st.state.updated_at)}`;
 }
 
@@ -388,7 +389,8 @@ export default async function liveView(root, params) {
   return () => {
     clearInterval(tick);
     root.closest('.view')?.classList.remove('wide');
-    if (session.running) session.stop();
+    // Paused still holds the microphone: stop whenever the session was started.
+    if (session.started || session.running) session.stop();
   };
 }
 
