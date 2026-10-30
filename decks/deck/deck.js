@@ -2,6 +2,9 @@ import { SCENES, paintScene } from './scenes.js';
 import { STARTS, CAPTIONS, LEAD, DURATION } from './timeline.js';
 
 const film = new URLSearchParams(location.search).get('mode') === 'film';
+// Slides build faster than the narrated film, so each one is complete within about 8 seconds.
+const DECK_SPEED = { challenge: 1.4, plan: 1.5, listen: 1.7, teacher: 1.9, lesson: 3.0, parents: 2.7, worship: 1.5, sources: 2.4, principles: 1.9 };
+
 const LIST = film ? SCENES.filter((s) => !s.deckOnly) : SCENES;
 const host = document.getElementById('scenes');
 host.innerHTML = LIST.map((s) => `<section class="scene" data-id="${s.id}" aria-label="${s.id}">${s.html}</section>`).join('');
@@ -66,7 +69,7 @@ if (film) {
   }
   function frame(now) {
     const t = reduce ? 60 : (now - t0) / 1000;
-    paintScene(els[i], LIST[i].id, t);
+    paintScene(els[i], LIST[i].id, t * (DECK_SPEED[LIST[i].id] || 1));
     ambient(now / 1000);
     requestAnimationFrame(frame);
   }
