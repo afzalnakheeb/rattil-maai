@@ -31,6 +31,18 @@ const HEAD = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-
 function lockPage(wrong = false, status = 200) {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Recite With Me · Decks</title><meta name="robots" content="noindex,nofollow">
+<meta name="description" content="A 3-minute narrated film and the product deck for Recite With Me, the Quran memorization app. Passcode required.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Recite With Me · رتّل معي">
+<meta property="og:title" content="Recite With Me · Film and pitch deck">
+<meta property="og:description" content="A 3-minute narrated film and the product deck. Enter the passcode to open.">
+<meta property="og:url" content="https://rattilmai.com/decks/">
+<meta property="og:image" content="https://rattilmai.com/icons/decks-share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Recite With Me: film and pitch deck">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://rattilmai.com/icons/decks-share.jpg">
 <style>
 :root{--bg:#051510;--card:#0C241B;--ivory:#F4EFE2;--muted:rgba(244,239,226,.72);--line:rgba(244,239,226,.18);--gold:#D9B66A;--red:#F0A08C;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(900px 500px at 80% -10%,rgba(47,143,104,.3),transparent 60%),var(--bg);color:var(--ivory);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left))}
