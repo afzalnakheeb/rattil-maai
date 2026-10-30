@@ -9,7 +9,7 @@ import { getMeta } from '../quran.js';
 import { buildReport, fmtMinutes } from '../report.js';
 import { MARK_LABEL } from '../session.js';
 import { SETS } from '../adhkar.js';
-import { esc, loading, errorBox, toast, band } from '../ui.js';
+import { esc, loading, errorBox, toast, band, fmtPages } from '../ui.js';
 import { icons } from '../icons.js';
 import { avatar } from './teacher.js';
 import { parentEmailsSlot, fillParentEmails } from './parents.js';
@@ -79,7 +79,7 @@ export default async function reportView(root, params) {
   // Summary sentence
   const parts = [];
   parts.push(R.count ? `${first} recited ${R.count} ${R.count === 1 ? 'time' : 'times'} (${fmtMinutes(R.minutes, R.anyTime)}) on ${R.activeDays} of ${P.days} days` : `${first} did not record a recitation in this period`);
-  if (R.pagesNew) parts.push(`learned ${R.pagesNew} new ${R.pagesNew === 1 ? 'page' : 'pages'}`);
+  if (R.pagesNew) parts.push(`learned ${fmtPages(R.pagesNew)} new ${R.pagesNew === 1 ? 'page' : 'pages'}`);
   if (R.graded.length) parts.push(`was graded ${R.graded.length} ${R.graded.length === 1 ? 'time' : 'times'} by the teacher (average ${R.gradeAvg}/100)`);
   const summary = `${parts.join(', ')}.`;
 
@@ -128,6 +128,7 @@ export default async function reportView(root, params) {
           <button class="icon-btn" type="button" id="newer" aria-label="Next ${kind}" ${offset === 0 ? 'disabled' : ''}>${icons.next}</button>
         </div>
       </div>
+      ${params.student ? '' : parentEmailsSlot()}
       <div class="seg no-print" role="group" aria-label="Report period" style="align-self:flex-start">
         <button type="button" data-range="week" aria-pressed="${kind === 'week'}">Weekly</button>
         <button type="button" data-range="month" aria-pressed="${kind === 'month'}">Monthly</button>
@@ -138,7 +139,7 @@ export default async function reportView(root, params) {
         <p style="margin-top:6px;font-size:16px;line-height:1.5">${esc(summary)}</p>
         <div class="hero-stats">
           <div><b>${R.activeDays}/${P.days}</b><span>Active days</span></div>
-          <div><b>${R.pagesTotal}</b><span>Pages memorized</span></div>
+          <div><b>${fmtPages(R.pagesTotal)}</b><span>Pages memorized</span></div>
           <div><b>${R.streak}</b><span>Day streak</span></div>
         </div>
       </section>
@@ -146,8 +147,8 @@ export default async function reportView(root, params) {
       <div class="rp-grid">
         <div class="stat"><b>${esc(fmtMinutes(R.minutes, R.anyTime))}</b><span>Recitation time</span><div>${delta(R.minutes, prev.minutes, ' min')}</div></div>
         <div class="stat"><b>${R.count}</b><span>Recordings</span><div>${delta(R.count, prev.count)}</div></div>
-        <div class="stat"><b>${R.pagesNew}</b><span>New pages</span><div>${delta(R.pagesNew, prev.pagesNew)}</div></div>
-        <div class="stat"><b>${R.aiAvg === null ? '–' : `${R.aiAvg}%`}</b><span>AI accuracy</span></div>
+        <div class="stat"><b>${fmtPages(R.pagesNew)}</b><span>New pages</span><div>${delta(R.pagesNew, prev.pagesNew)}</div></div>
+        <div class="stat"><b>${R.aiAvg === null ? '–' : `${R.aiAvg}%`}</b><span>Words correct (AI check)</span></div>
         <div class="stat"><b>${R.gradeAvg === null ? '–' : R.gradeAvg}</b><span>Teacher grade</span></div>
         <div class="stat"><b>${R.mistakeTotal}</b><span>Mistakes</span><div>${delta(R.mistakeTotal, prev.mistakeTotal, '', false)}</div></div>
       </div>
@@ -162,7 +163,7 @@ export default async function reportView(root, params) {
         <div class="row-wrap small">
           <span class="chip">${icons.book.replace('<svg', '<svg width="14" height="14"')} New lesson · ${dayLabel(R.plan.sabaq)} days</span>
           <span class="chip plain">Recent revision · ${dayLabel(R.plan.sabqi)}</span>
-          <span class="chip gold">Old revision · ${dayLabel(R.plan.manzil)}</span>
+          ${R.plan.manzil || R.pagesTotal > 10 ? `<span class="chip gold">Old revision · ${dayLabel(R.plan.manzil)}</span>` : ''}
         </div>
         <p class="xs muted">A day counts when that part was recited with the AI at 90% or better.</p>
       </div>
@@ -188,14 +189,13 @@ export default async function reportView(root, params) {
 
       <div class="card stack-s">
         <h2>Adhkar</h2>
-        <div class="row-wrap">${SETS.map((set) => `<span class="chip ${R.adhkarDays[set.id] ? '' : 'plain'}">${esc(set.label)} · ${dayLabel(R.adhkarDays[set.id])}</span>`).join('')}</div>
+        ${SETS.some((set) => R.adhkarDays[set.id]) ? `<div class="row-wrap">${SETS.map((set) => `<span class="chip ${R.adhkarDays[set.id] ? '' : 'plain'}">${esc(set.label)} · ${dayLabel(R.adhkarDays[set.id])}</span>`).join('')}</div>` : '<p class="small muted">No full adhkar set completed in this period.</p>'}
       </div>
 
       <div class="row-wrap no-print">
         <button class="btn" type="button" id="share">${icons.share} Share with parents</button>
         <button class="btn outline" type="button" id="print">Print or save as PDF</button>
       </div>
-      ${params.student ? '' : parentEmailsSlot()}
       <p class="xs muted" style="text-align:center">Recite With Me · rattilmai.com · generated ${esc(new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))}</p>
     </div>`;
 

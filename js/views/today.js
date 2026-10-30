@@ -2,13 +2,14 @@ import * as store from '../store.js';
 import { liveStreak } from '../report.js';
 import * as plan from '../plan.js';
 import { describePortions } from '../quran.js';
-import { esc, todayKey } from '../ui.js';
+import { esc, todayKey, onLeave, fmtPages } from '../ui.js';
 import { icons } from '../icons.js';
 import { SETS, ADHKAR } from '../adhkar.js';
 import * as cloud from '../cloud.js';
 import { isCloud } from '../account.js';
 import { computeTimes, nextPrayer, tzOffsetHours, optionsFrom } from '../prayer.js';
 import { avatar } from './teacher.js';
+import { isStandalone, openInstallSheet } from '../fullscreen.js';
 
 function nextPrayerLine(settings) {
   const p = settings.prayer;
@@ -29,14 +30,26 @@ function nextPrayerLine(settings) {
 }
 
 const ITEMS = [
-  { key: 'sabaq', title: 'New lesson · Sabaq', icon: 'book', tile: 'solid', minutes: 30 },
-  { key: 'sabqi', title: 'Recent revision · Sabqi', icon: 'check', tile: '', minutes: 25 },
-  { key: 'manzil', title: 'Old revision · Manzil', icon: 'repeat', tile: 'gold', minutes: 40 },
+  { key: 'sabaq', title: 'New lesson · Sabaq', icon: 'book', tile: 'solid' },
+  { key: 'sabqi', title: 'Recent revision · Sabqi', icon: 'check', tile: '' },
+  { key: 'manzil', title: 'Old revision · Manzil', icon: 'repeat', tile: 'gold' },
 ];
+
+// Rough time for a part, from how many pages it has: learning a page takes far longer than revising one.
+export function minutesFor(key, portions) {
+  const pages = portions.reduce((n, p) => n + (p.part === 'all' ? 1 : 0.5), 0);
+  const raw = key === 'sabaq' ? Math.max(10, pages * 20) : Math.max(5, pages * 3);
+  return Math.ceil(raw / 5) * 5;
+}
 
 export default function todayView(root) {
   const s = store.get();
-  if (!s.plan) return setupPlan(root);
+  if (!s.plan) {
+    // First set the plan: no tab bar to wander off before there is one.
+    const bar = document.getElementById('tabbar');
+    if (bar) { bar.hidden = true; onLeave(root, () => { if (store.get().profile?.role) bar.hidden = false; }); }
+    return setupPlan(root);
+  }
 
   const t = plan.today(s.plan);
   const day = todayKey();
@@ -51,37 +64,51 @@ export default function todayView(root) {
   const greet = new Date().getHours() < 12 ? 'Sabah al-khayr' : 'As-salamu alaykum';
   const days = plan.projectedDays(s.plan);
   const finish = new Date(Date.now() + days * 864e5).toLocaleDateString([], { month: 'long', year: 'numeric' });
+  const streakNow = liveStreak(s.streak);
+  const best = Math.max(s.streak?.best || 0, streakNow);
+  const allDone = items.length > 0 && doneCount === items.length;
+  // Until the first new lesson is done, show the two steps: listen first, then recite.
+  const firstLesson = !Object.values(s.daily || {}).some((d) => d && d.sabaq);
+  // After the first day, 'get a teacher' moves below the plan so today's task comes first.
+  const newcomer = Object.keys(s.daily || {}).length === 0;
 
   root.innerHTML = `
     <div class="stack">
       <section class="hero">
         <div class="eyebrow">${new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <h1 style="margin-top:4px">${esc(greet)}, ${esc((s.profile?.name || '').split(' ')[0])}</h1>
-        <a class="small" href="#/prayer" style="color:var(--gold-2);text-decoration:none;display:inline-flex;gap:6px;align-items:center;margin-top:4px">${icons.moon.replace('<svg', '<svg width="15" height="15"')}<span>${esc(nextPrayerLine(s.settings) || 'Set your city for prayer times')}</span></a>
+        <a class="small hero-link" href="#/prayer">${icons.moon}<span>${esc(nextPrayerLine(s.settings) || 'Set your city for prayer times')}</span></a>
         <div class="hero-stats">
-          <div><b>${liveStreak(s.streak)}</b><span>Day streak</span></div>
-          <div><b>${t.memorizedCount}</b><span>${t.memorizedCount === 1 ? 'Page memorized' : 'Pages memorized'}</span></div>
+          <div><b>${streakNow}</b><span>${streakNow === 0 && best > 1 ? `Day streak · best ${best}` : 'Day streak'}</span></div>
+          <div><b>${fmtPages(t.memorizedCount)}</b><span>${t.memorizedCount === 1 ? 'Page memorized' : 'Pages memorized'}</span></div>
           <div><b>${esc(plan.level(s.plan).short)}</b><span>Each day</span></div>
         </div>
       </section>
       <div id="liveNow"></div>
-      <div id="nextStep"></div>
+      ${newcomer ? '<div id="nextStep"></div>' : ''}
+      <div id="feedback"></div>
+      ${streakNow === 0 && best > 1 && !allDone ? `<div class="notice">Your best run is ${best} days. Start again today: even a small portion counts. The most beloved deeds are the most consistent, even if small.</div>` : ''}
       ${t.complete ? `<div class="card gold stack-s"><h2>You have completed the whole Quran. Allahumma barik.</h2><p class="small">Keep your manzil every day so it stays strong.</p></div>` : ''}
       <div class="card stack">
         <div class="spread"><h2>Today's plan</h2><span class="small muted">${doneCount} of ${items.length} done</span></div>
         <div class="bar" aria-hidden="true"><i style="width:${pct}%"></i></div>
+        ${allDone ? `<div class="notice green"><b>Today's plan is complete. Allahumma barik.</b><br>See you tomorrow, in sha Allah. Keep your adhkar for the day.</div>` : ''}
+        ${allDone && !s.meta?.installAsked && !isStandalone() ? `<div class="card row" id="installAsk" style="box-shadow:none;border:1px solid var(--line-2)"><div class="grow"><h3>Keep it on your home screen</h3><div class="xs muted">Open Recite With Me like an app, one tap every day.</div></div><button class="btn sm" type="button" id="installYes">Add</button><button class="btn ghost sm" type="button" id="installNo">Not now</button></div>` : ''}
         <div>
           ${items.map((it) => {
             const d = !!done[it.key];
-            return `<div class="list-item">
+            return `<div class="list-item${!d && it.key === 'sabaq' ? ' wrap-actions' : ''}">
               <div class="icon-tile ${d ? '' : it.tile}">${d ? icons.check : icons[it.icon]}</div>
               <div class="grow">
                 <h3 style="${d ? 'color:var(--ink-2)' : ''}">${it.title}</h3>
-                <div class="small muted">${esc(describePortions(t[it.key]))}${d ? ' · done' : ` · about ${it.minutes} min`}</div>
+                <div class="small muted">${esc(describePortions(t[it.key]))}${d ? ' · done' : ` · about ${minutesFor(it.key, t[it.key])} min`}</div>
+                ${!d && it.key === 'sabaq' && firstLesson ? '<div class="xs muted" style="margin-top:4px">1. Listen and read along 5 times · 2. Recite from memory</div>' : ''}
               </div>
               ${d ? `<span class="small" style="color:var(--green);font-weight:600">Done</span>`
                 : `<div class="row" style="gap:6px">
-                    <a class="icon-btn" href="#/mushaf?page=${t[it.key][0].page}&part=${t[it.key][0].part}&loops=${it.key === 'sabaq' ? 5 : 1}" aria-label="Listen to ${it.title}">${icons.book}</a>
+                    ${it.key === 'sabaq'
+                      ? `<a class="btn outline sm" href="#/mushaf?page=${t[it.key][0].page}&part=${t[it.key][0].part}&loops=5" aria-label="Listen to the new lesson 5 times">${icons.play} Listen</a>`
+                      : `<a class="icon-btn" href="#/mushaf?page=${t[it.key][0].page}&part=${t[it.key][0].part}&loops=1" aria-label="Listen to ${it.title}">${icons.play}</a>`}
                     <a class="btn sm" href="#/recite?plan=${it.key}">Recite</a>
                   </div>`}
             </div>`;
@@ -99,6 +126,7 @@ export default function todayView(root) {
         </div>
         <p class="xs muted">Recite each part with the AI and reach 90% to tick it off. The new lesson moves forward once it is done.</p>
       </div>
+      ${newcomer ? '' : '<div id="nextStep"></div>'}
       <div class="card gold stack-s">
         <div class="spread"><div class="eyebrow" style="color:var(--gold-ink)">Your path</div><span style="color:var(--gold)">${icons.star.replace('<svg', '<svg width="18" height="18"')}</span></div>
         <p>${t.complete ? 'Hifz complete.' : `At this pace you complete the Quran around <b>${esc(finish)}</b>, in sha Allah.`}</p>
@@ -114,6 +142,9 @@ export default function todayView(root) {
         ${isCloud() ? '<div class="spinner"></div>' : `<p class="small muted">Sign in with Google to join your teacher's class. Your teacher can then review your practice and call you for video sessions.</p><div><a class="btn sm" href="#/signin">Sign in with Google</a></div>`}
       </div>
     </div>`;
+  const askedInstall = () => store.update((x) => { x.meta = { ...(x.meta || {}), installAsked: Date.now() }; }, { silent: true });
+  root.querySelector('#installYes')?.addEventListener('click', () => { askedInstall(); root.querySelector('#installAsk')?.remove(); openInstallSheet(); });
+  root.querySelector('#installNo')?.addEventListener('click', () => { askedInstall(); root.querySelector('#installAsk')?.remove(); });
   if (isCloud()) fillTeacher(root);
 }
 
@@ -128,7 +159,9 @@ async function fillTeacher(root) {
     try {
       const { applyTeacherPasses } = await import('../passplan.js');
       const records = await import('../records.js');
-      if (applyTeacherPasses(await records.list()) && root.isConnected) { todayView(root); return; }
+      const list = await records.list();
+      if (applyTeacherPasses(list) && root.isConnected) { todayView(root); return; }
+      showFeedback(root, list);
     } catch { /* offline */ }
   }
   const card = root.querySelector('#teacherCard');
@@ -146,14 +179,46 @@ async function fillTeacher(root) {
       <div class="grow"><h3>Next step: get your teacher</h3><div class="small muted">Tell us your language and we match you with a verified Quran teacher.</div></div>
       <span class="btn sm">Find a teacher</span></a>`;
   }
+  const canAlert = teachers.length && 'Notification' in window && Notification.permission === 'default';
   card.innerHTML = `<h2>My teacher</h2>${teachers.length
     ? teachers.map((t) => `<div class="list-item">${avatar(t)}<div class="grow"><h3>${esc(t.name)}</h3><div class="xs muted">Sees your plan and recordings · calls you for video sessions</div></div></div>`).join('')
+      + (canAlert ? '<button class="btn outline sm" id="callAlerts" type="button" style="align-self:flex-start">Alert me when my teacher calls</button>' : '')
     : `${req && req.status === 'waiting'
-        ? '<div class="notice green">You asked the academy for a teacher. We will match you with one who speaks your language soon.</div><a class="btn sm outline" href="#/find-teacher" style="align-self:flex-start">See or change my request</a>'
+        ? '<div class="notice green">You asked the academy for a teacher. As soon as a teacher who speaks your language is free, they will appear here. Lessons are video calls inside this app: keep it open at lesson time.</div><a class="btn sm outline" href="#/find-teacher" style="align-self:flex-start">See or change my request</a>'
         : '<p class="small muted">No teacher yet? The academy matches you with a verified teacher who speaks your language.</p><a class="btn sm" href="#/find-teacher" style="align-self:flex-start">Find me a teacher</a>'}
        <p class="xs muted" style="margin-top:6px">Already have a teacher? Enter their class code.</p>
        <form class="row" id="joinT"><label class="sr-only" for="tcode">Class code</label><input class="input grow code" id="tcode" maxlength="6" placeholder="CODE" autocomplete="off" required><button class="btn sm" type="submit">Join</button></form>`}`;
+  card.querySelector('#callAlerts')?.addEventListener('click', async (e) => {
+    const b = e.currentTarget;
+    try { await Notification.requestPermission(); } catch { /* ignore */ }
+    b.remove();
+  });
   card.querySelector('#joinT')?.addEventListener('submit', (e) => { e.preventDefault(); location.hash = `#/join/${card.querySelector('#tcode').value.trim().toUpperCase()}`; });
+}
+
+// The latest grade or comment from the teacher that the student has not seen yet.
+function showFeedback(root, list) {
+  const box = root.querySelector('#feedback');
+  if (!box) return;
+  const seen = store.get().meta?.feedbackSeen || 0;
+  const since = Date.now() - 21 * 864e5;
+  const item = list.map((h) => {
+    const g = h.review?.grade || (h.kind !== 'practice' ? h.grade : null);
+    if (!g) return null;
+    const at = h.review?.updated || h.created || 0;
+    return { h, g, at, decision: h.review?.decision || h.decision || '', comment: h.review?.comment || h.comment || '', teacher: h.review?.teacher || h.teacher || 'Your teacher' };
+  }).filter((x) => x && x.at > seen && x.at > since).sort((a, b) => b.at - a.at)[0];
+  if (!item) return;
+  const total = Number(item.g.total) || 0;
+  box.innerHTML = `<div class="card stack-s" style="border:1.5px solid var(--gold)">
+    <div class="spread"><div class="eyebrow">Feedback from ${esc(item.teacher)}</div><span class="chip ${item.decision === 'repeat' ? 'red' : ''}">${total}/100${item.decision ? ` · ${item.decision === 'pass' ? 'Pass' : 'Repeat'}` : ''}</span></div>
+    <div class="small muted">${esc((item.h.title || '').split(' · ')[0])}</div>
+    ${item.comment ? `<p>“${esc(item.comment)}”</p>` : ''}
+    <div class="row-wrap"><a class="btn sm" id="fbOpen" href="#/history/${encodeURIComponent(item.h.id)}">See marks and listen</a><button class="btn ghost sm" id="fbDone" type="button">Got it</button></div>
+  </div>`;
+  const mark = () => store.update((x) => { x.meta = { ...(x.meta || {}), feedbackSeen: item.at }; }, { silent: true });
+  box.querySelector('#fbOpen').addEventListener('click', mark);
+  box.querySelector('#fbDone').addEventListener('click', () => { mark(); box.innerHTML = ''; });
 }
 
 export function setupPlan(root, { onDone } = {}) {
@@ -182,6 +247,8 @@ export function setupPlan(root, { onDone } = {}) {
     store.update((st) => {
       st.plan = { level: f.get('level'), track: f.get('track'), units: already * 2, manzilCursor: 0, created: Date.now() };
     });
+    const bar = document.getElementById('tabbar');
+    if (bar && !onDone) bar.hidden = false;
     if (onDone) onDone(); else location.hash = '#/';
     todayView(root);
     window.scrollTo(0, 0);

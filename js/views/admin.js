@@ -50,7 +50,7 @@ export default async function adminView(root, params) {
     root.innerHTML = `
       <div class="stack">
         <div class="page-head"><p class="eyebrow">Recite With Me academy · ${myRole === 'owner' ? 'Owner' : 'Admin'}</p><h1>Admin panel</h1></div>
-        <div class="seg admin-tabs" role="tablist">${TABS.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-pressed="${tab === k}">${l}${k === 'applications' && pending ? ` <span class="badge">${pending}</span>` : ''}${k === 'students' && waiting.length ? ` <span class="badge">${waiting.length}</span>` : ''}</button>`).join('')}</div>
+        <div class="seg admin-tabs" role="tablist">${TABS.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${tab === k}" aria-pressed="${tab === k}">${l}${k === 'applications' && pending ? ` <span class="badge">${pending}</span>` : ''}${k === 'students' && waiting.length ? ` <span class="badge">${waiting.length}</span>` : ''}</button>`).join('')}</div>
         <div id="pane">${{ overview, applications, teachers, students, admins }[tab]()}</div>
       </div>`;
     root.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; history.replaceState(null, '', `#/admin?tab=${tab}`); paint(); }));
@@ -111,7 +111,7 @@ export default async function adminView(root, params) {
             <div><span>Gender</span><b>${a.gender === 'female' ? 'Female' : 'Male'}</b></div>
             <div><span>Experience</span><b>${a.years_experience} ${a.years_experience === 1 ? 'year' : 'years'}</b></div>
             <div><span>Country</span><b>${esc(a.country || '—')}</b></div>
-            <div><span>Hours / week</span><b>${a.hours_per_week}</b></div>
+            <div><span>Hours / week</span><b>${a.hours_per_week ?? '–'}</b></div>
           </div>
           <div class="row-wrap">${a.languages.map((l, i) => `<span class="chip ${i === 0 ? '' : 'plain'}">${i === 0 ? 'Mother tongue: ' : ''}${esc(langName(l))}</span>`).join('')}</div>
           ${a.teaches.length ? `<p class="xs muted">Teaches: ${a.teaches.map((k) => esc((TEACHES.find((x) => x[0] === k) || [k, k])[1])).join(' · ')}</p>` : ''}
@@ -264,6 +264,12 @@ export default async function adminView(root, params) {
       const cap = Math.max(1, Math.min(200, Number(card.querySelector(`[id^="cap-"]`).value) || 10));
       const note = card.querySelector(`[id^="note-"]`).value;
       if (card.dataset.busy) return;
+      if (decision === 'declined') {
+        const app = data.apps.find((x) => String(x.id) === String(id));
+        const t = app && data.teachers.find((x) => x.user_id === app.user_id);
+        const n = t?.students || 0;
+        if (app?.status === 'approved' && !confirm(`Decline ${app.name || 'this teacher'}? They lose teacher access${n ? `, and their ${n} ${n === 1 ? 'student goes' : 'students go'} back to the waiting list` : ''}.`)) return;
+      }
       card.dataset.busy = '1';
       card.querySelectorAll('[data-review]').forEach((x) => { x.disabled = true; });
       try {

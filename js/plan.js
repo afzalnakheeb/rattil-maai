@@ -10,7 +10,7 @@ export const LEVELS = [
 ];
 
 export const TRACKS = [
-  { id: 'amma', label: "Juz 'Amma first", note: 'Starts at An-Nas (page 604) and moves back, the usual path for children' },
+  { id: 'amma', label: "Juz 'Amma first", note: 'Starts with the last page (Al-Ikhlas, Al-Falaq, An-Nas) and moves back, the usual path for children' },
   { id: 'fatiha', label: 'From Al-Fatiha forward', note: 'Starts at page 1 and moves through the Mushaf in order' },
 ];
 

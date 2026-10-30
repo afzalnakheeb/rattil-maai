@@ -103,6 +103,8 @@ export function touchStreak(day) {
     const p = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
     s.streak.count = s.streak.last === p ? s.streak.count + 1 : 1;
     s.streak.last = day;
+    // Keep the best run, so a broken streak never erases the record.
+    s.streak.best = Math.max(s.streak.best || 0, s.streak.count);
   });
 }
 

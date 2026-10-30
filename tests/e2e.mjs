@@ -337,6 +337,8 @@ try {
   await page.waitForSelector('#nextStep a[href="#/find-teacher"]');
   check('Today shows "Next step: get your teacher" for a new student', true);
   check('Today offers to join a teacher with a class code', true);
+  check('First lesson shows the two steps: listen, then recite', /1\. Listen and read along 5 times/.test(sabaqText) && /Listen/.test(await page.textContent('.card .list-item .btn.outline')));
+  check('Time estimate follows the portion size (½ page ≈ 10 min)', /about 10 min/.test(sabaqText), sabaqText.replace(/\s+/g, ' ').slice(0, 120));
   await shot(page, '02-today');
   await page.waitForTimeout(1800);
   const studentId = db.profiles.find((p) => p.email === 'yusuf.ali@gmail.com').id;
@@ -465,6 +467,10 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('#wordsCard .w.bad').length >= 1, null, { timeout: 5000 }).then(() => true).catch(() => false);
   check('Teacher’s mark appears on the student’s screen', (await page.locator('#wordsCard .w.bad').count()) >= 1);
   await tp.click('[data-confirm]');
+  tp.once('dialog', (d) => d.dismiss());
+  await tp.evaluate(() => { location.hash = '#/'; });
+  await tp.waitForTimeout(400);
+  check('Back during a live lesson asks first, and staying keeps the call', !!(await tp.$('#startBtn')) && db.calls[0]?.status !== 'ended');
   await shot(tp, '16-teacher-call');
   await shot(page, '17-student-call');
   check('No sideways scrolling on the student’s call screen', await noOverflow(page));
@@ -485,6 +491,9 @@ try {
   await page.click('#result a');
   await page.waitForSelector('text=Video session');
   check('Student opens the graded video session in History', await page.waitForSelector('audio', { timeout: 5000 }).then(() => true).catch(() => false));
+  await page.goto(BASE + '#/');
+  const fb = await page.waitForSelector('#feedback .card', { timeout: 6000 }).then((el) => el.textContent()).catch(() => '');
+  check('Today shows the new feedback from the teacher', /Feedback from/.test(fb) && /\/100/.test(fb) && /Mashallah/.test(fb), fb.replace(/\s+/g, ' ').slice(0, 90));
   await tp.click('#endBtn');
   await tp.waitForTimeout(300);
   check('Leaving ends the call', db.calls[0]?.status === 'ended');
@@ -507,6 +516,19 @@ try {
   await page.waitForSelector('text=Teacher review', { timeout: 6000 }).catch(() => {});
   const pv = await page.textContent('#view');
   check('Student sees the teacher’s review on their practice', /Teacher review/.test(pv) && /Repeat this portion/.test(pv));
+
+  // A portion recited only partly: no misleading percentage
+  await page.goto(BASE + '#/recite?page=604&part=1%2F2');
+  await page.waitForSelector('.words');
+  await page.click('#mic');
+  await page.waitForFunction(() => window.__rec && window.__rec._on);
+  await page.evaluate(() => window.__say('قل هو الله احد'));
+  await page.waitForTimeout(150);
+  await page.click('#finish');
+  await page.waitForSelector('#result .card', { timeout: 5000 });
+  const partial = await page.textContent('#result h2');
+  check('An unfinished portion shows words recited, not a low % score', /\d+ of \d+ words/.test(partial) && !/% correct/.test(partial), partial);
+
 
   // ---------- Parent reports ----------
   await page.goto(BASE + '#/report');
@@ -767,6 +789,7 @@ try {
   await adm.waitForSelector('[data-af="approved"]');
   await adm.click('[data-af="approved"]');
   await adm.waitForSelector('[data-app]:has-text("Maryam Khan") [data-review="declined"]');
+  adm.once('dialog', (d) => d.accept());
   await adm.click('[data-app]:has-text("Maryam Khan") [data-review="declined"]');
   await adm.waitForSelector('text=Application declined');
   const aishaReq = db.requests.find((r) => r.student_name === 'Aisha');

@@ -4,7 +4,7 @@ import * as account from './account.js';
 import { icons } from './icons.js';
 import { applyTheme } from './theme.js';
 import { initFullscreenButton, watchViewport } from './fullscreen.js';
-import { esc, loading, onLeave, leave, toast } from './ui.js';
+import { esc, loading, onLeave, leave, toast, allowNav } from './ui.js';
 import todayView from './views/today.js';
 import mushafView from './views/mushaf.js';
 import reciteView from './views/recite.js';
@@ -151,6 +151,11 @@ async function render() {
   hideRingFor(route, id);
   const res = await out;
   if (typeof res === 'function') onLeave(pg, res);
+  // Screen readers: announce the new page by moving focus to its heading (without scrolling).
+  if (page === pg && route !== 'call') {
+    const h = pg.querySelector('h1');
+    if (h && document.activeElement && !pg.contains(document.activeElement)) { h.setAttribute('tabindex', '-1'); try { h.focus({ preventScroll: true }); } catch { /* ignore */ } }
+  }
 }
 
 // ---------- Incoming video session (student) ----------
@@ -252,10 +257,7 @@ async function boot() {
   });
   if (account.isCloud()) watchCalls();
   render();
-  if (account.isCloud() && 'Notification' in window && Notification.permission === 'default' && store.get().profile?.role === 'student') {
-    // Ask once, after a tap, so call alerts can reach a backgrounded tab.
-    window.addEventListener('pointerdown', () => { try { Notification.requestPermission(); } catch { /* ignore */ } }, { once: true });
-  }
+  // Call alerts are switched on from the 'My teacher' card, when they make sense (not on the first tap).
   window.addEventListener('online', () => { account.syncPending(); });
   // Ask the browser to keep recordings that have not uploaded yet (Safari clears idle sites).
   try { navigator.storage?.persist?.().catch(() => {}); } catch { /* ignore */ }
@@ -266,7 +268,14 @@ window.addEventListener('rattil:storage-full', () => toast('This device is out o
 roleChip.addEventListener('click', () => { location.hash = '#/settings'; });
 initFullscreenButton(document.getElementById('fsBtn'));
 watchViewport();
-window.addEventListener('hashchange', render);
+let lastHash = location.hash;
+window.addEventListener('hashchange', () => {
+  // A live lesson can ask first; if the user stays, put the address back.
+  if (!allowNav()) { history.replaceState(null, '', lastHash || '#/'); return; }
+  lastHash = location.hash;
+  document.getElementById('toast')?.classList.remove('show');
+  render();
+});
 store.onChange(() => applyTheme());
 boot();
 

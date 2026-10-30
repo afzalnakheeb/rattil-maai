@@ -61,8 +61,9 @@ export default async function adhkarView(root, params) {
     const pct = n / d.count;
     root.innerHTML = `
       <div class="stack">
+        <div class="page-head"><h1>Adhkar</h1></div>
         <div class="seg full" role="group" aria-label="Adhkar set">
-          ${SETS.map((x) => `<button type="button" data-set="${x.id}" aria-pressed="${x.id === setId}">${esc(x.label)}</button>`).join('')}
+          ${SETS.map((x) => `<button type="button" data-set="${x.id}" aria-pressed="${x.id === setId}">${esc(x.id === 'sleep' ? 'Sleep' : x.id === 'prayer' ? 'After salah' : x.label)}</button>`).join('')}
         </div>
         <div class="stack-s">
           <div class="spread"><span class="small muted">${esc(SETS.find((x) => x.id === setId).note)}</span><span class="small"><b>${doneN} of ${L.length}</b></span></div>

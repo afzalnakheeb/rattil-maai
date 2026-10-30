@@ -119,3 +119,6 @@ export function watchViewport() {
   window.addEventListener('orientationchange', () => setTimeout(update, 300));
   update();
 }
+
+// Offer 'add to home screen' from elsewhere in the app (after a first completed day).
+export const openInstallSheet = () => openSheet();

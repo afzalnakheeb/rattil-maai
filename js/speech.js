@@ -72,6 +72,7 @@ export class Recorder {
   // stream: record an existing stream (e.g. the mixed call audio) instead of opening the microphone.
   async start(stream = null, { bitrate = 40000 } = {}) {
     this.startedAt = Date.now();
+    this.error = '';
     if (!window.MediaRecorder || (!stream && !recordingSupported())) return false;
     try {
       this.external = !!stream;
@@ -85,7 +86,8 @@ export class Recorder {
       this.mr.start(1000);
       this.startedAt = Date.now();
       return true;
-    } catch {
+    } catch (e) {
+      this.error = e?.name || 'error';
       this.stop();
       return false;
     }

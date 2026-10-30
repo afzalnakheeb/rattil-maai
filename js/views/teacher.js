@@ -53,7 +53,11 @@ async function fillAcademy(root) {
   const card = (border, icon, title, text, link) => `<a class="card row" href="#/apply" style="text-decoration:none;color:inherit;${border}">
     <div class="icon-tile ${icon}">${icons.users}</div><div class="grow"><h3>${title}</h3><div class="small muted">${text}</div></div>${link ? `<span class="btn sm">${link}</span>` : ''}</a>`;
   if (!app) box.innerHTML = card('border:1.5px solid var(--gold)', 'gold', 'Teach with the academy', 'Apply to become a verified teacher. Students who speak your languages are then assigned to you.', 'Apply');
-  else if (app.status === 'pending') box.innerHTML = card('', 'gold', 'Your application is under review', teacherApproved() ? 'During the test phase you can already teach your own students with your class code.' : 'Teaching opens as soon as the academy approves you.', '');
+  else if (app.status === 'pending' && !teacherApproved()) {
+    // One status card instead of two saying the same thing.
+    root.querySelector('.locked-note')?.remove();
+    box.innerHTML = card('', 'gold', 'Your application is under review', 'Your class code, students and video sessions open as soon as the academy has listened to your recitation test and approved you.', 'View').replace('class="card row"', 'class="card row locked-note"');
+  } else if (app.status === 'pending') box.innerHTML = card('', 'gold', 'Your application is under review', 'During the test phase you can already teach your own students with your class code.', '');
   else if (app.status === 'approved') box.innerHTML = card('', 'solid', 'Verified academy teacher', prof ? `${prof.accepting ? 'Taking new students' : 'Not taking new students'} · up to ${prof.capacity} academy students` : 'Students are assigned to you by language.', '');
   else box.innerHTML = card('', 'red', 'Application not approved', app.admin_note ? esc(app.admin_note) : 'Contact the academy to ask why, or apply again later.', 'View');
 }
@@ -178,10 +182,13 @@ export function teacherHome(root) {
       try { students = await cloud.myStudents(); } catch { root.querySelector('#students').innerHTML = errorBox('Could not load your students. Check your connection.'); }
       const box = root.querySelector('#students');
       if (box && students) {
+        // Students who have gone quiet come first, so the teacher sees who needs encouragement.
+        const quietDays = (st) => (st.state?.updated_at ? Math.floor((Date.now() - new Date(st.state.updated_at).getTime()) / DAY) : 999);
+        students = [...students].sort((a, b) => quietDays(b) - quietDays(a));
         box.innerHTML = students.length ? students.map((st) => `
           <div class="list-item" style="flex-wrap:wrap">
             ${avatar(st)}
-            <div class="grow"><h3>${esc(st.name)}</h3><div class="xs muted">${esc(studentSummary(st))}</div></div>
+            <div class="grow"><h3>${esc(st.name)}${quietDays(st) >= 3 && quietDays(st) < 999 ? ` <span class="chip gold" style="vertical-align:middle">${quietDays(st)} days quiet</span>` : ''}</h3><div class="xs muted">${esc(studentSummary(st))}</div></div>
             <div class="row" style="gap:6px">
               <a class="btn sm" href="#/live?student=u:${st.id}&online=1" aria-label="Video session with ${esc(st.name)}">${icons.video} Video</a>
               <a class="btn sm outline" href="#/live?student=u:${st.id}">In person</a>
@@ -464,11 +471,13 @@ export function wireMarking(root, session, { canMark = () => true, onBlocked = (
 }
 
 // ---------- Grade form ----------
-export function gradeForm(root, session, { studentName, blob, onSubmit, title = 'Grade and submit', note = '' }) {
+export function gradeForm(root, session, opts) {
+  const { studentName, blob, onSubmit, title = 'Grade and submit', note = '' } = opts;
+  const pendingAi = session.activeMarks().filter((m) => m.status === 'suggested');
   const active = session.activeMarks().filter((m) => m.type !== 'peek' && m.status !== 'suggested');
   const hifzDefault = Math.max(0, 40 - active.filter((m) => ['wrong', 'skipped', 'teacher', 'extra'].includes(m.type)).length * 2);
   const vals = { hifz: hifzDefault, tajweed: 30, makharij: 20, waqf: 10 };
-  const ROWS = [['hifz', 'Hifz accuracy', 40], ['tajweed', 'Tajweed', 30], ['makharij', 'Makharij', 20], ['waqf', 'Waqf and fluency', 10]];
+  const ROWS = [['hifz', 'Hifz accuracy', 40], ['tajweed', 'Tajweed', 30], ['makharij', 'Makharij (pronouncing letters)', 20], ['waqf', 'Waqf (stopping) and fluency', 10]];
 
   root.innerHTML = `
     <form class="stack" id="gradeForm">
@@ -479,6 +488,8 @@ export function gradeForm(root, session, { studentName, blob, onSubmit, title = 
       </div>
       <div class="card stack-s">
         <h2>Mistakes in this session</h2>
+        ${pendingAi.length ? `<div class="notice">${pendingAi.length} AI ${pendingAi.length === 1 ? 'suggestion is' : 'suggestions are'} not reviewed yet and will not count.
+          <div class="row-wrap" style="margin-top:8px"><button class="btn sm" type="button" id="aiAll">Confirm all ${pendingAi.length}</button><button class="btn ghost sm" type="button" id="aiNone">Dismiss all</button></div></div>` : ''}
         ${active.length ? active.map((m) => `<div class="row"><span class="quran" style="font-size:20px;padding:0 8px;border-radius:8px;background:var(--red-tint);border-bottom:2px solid var(--red)" lang="ar">${esc(m.word)}</span><span class="grow small">Ayah ${Number(m.ayah) || ''} · ${esc(MARK_LABEL[m.type] || m.type)}</span><span class="chip red">${m.source === 'teacher' ? 'Teacher' : 'AI · confirmed'}</span></div>`).join('') : '<p class="small muted">No mistakes marked.</p>'}
         <p class="xs muted">Unconfirmed AI suggestions are not counted.</p>
       </div>
@@ -497,6 +508,9 @@ export function gradeForm(root, session, { studentName, blob, onSubmit, title = 
         <button class="btn grow" type="submit" data-decision="pass">Pass · open next</button>
       </div>
     </form>`;
+  const settle = (status) => { pendingAi.forEach((m) => session.setMark(m.id, status)); gradeForm(root, session, opts); };
+  root.querySelector('#aiAll')?.addEventListener('click', () => settle('confirmed'));
+  root.querySelector('#aiNone')?.addEventListener('click', () => settle('dismissed'));
 
   const sum = () => {
     const total = ROWS.reduce((a, [k]) => a + vals[k], 0);

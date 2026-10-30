@@ -102,7 +102,7 @@ export async function applyView(root) {
         <div class="field"><label for="aName">Full name</label><input class="input" id="aName" name="fullname" value="${esc(a.name)}" minlength="2" maxlength="80" required autocomplete="name"></div>
         <div class="row-wrap">
           <div class="field" style="flex:1 1 160px"><span class="label">I am</span>
-            <div class="seg" role="radiogroup" aria-label="Gender">
+            <div class="seg two" role="radiogroup" aria-label="Gender">
               <label class="seg-radio"><input type="radio" name="gender" value="male" ${a.gender === 'male' ? 'checked' : ''} required><span>Male teacher</span></label>
               <label class="seg-radio"><input type="radio" name="gender" value="female" ${a.gender === 'female' ? 'checked' : ''}><span>Female teacher</span></label>
             </div></div>

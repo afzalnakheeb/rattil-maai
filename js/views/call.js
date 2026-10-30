@@ -9,7 +9,7 @@ import { CallLink, Mixer, getMedia } from '../call.js';
 import { renderWords } from './words.js';
 import { markingPanel, paintMarking, wireMarking, gradeForm, avatar } from './teacher.js';
 import { speechSupported } from '../speech.js';
-import { esc, fmtTime, loading, errorBox, toast, onLeave, alive, todayKey } from '../ui.js';
+import { esc, fmtTime, loading, errorBox, toast, onLeave, alive, todayKey, guardLeave } from '../ui.js';
 import { passPlan } from '../passplan.js';
 import { icons } from '../icons.js';
 
@@ -184,6 +184,12 @@ async function teacherRoom(root, call, stream, studentName) {
   };
   // Moving to another page of the app ends the session for both; a reload can rejoin.
   onLeave(root, () => { if (!ended) cloud.updateCall(call.id, { status: 'ended' }).catch(() => {}); dispose(); });
+  // Back button or a tab during a recitation that is not saved yet: ask first.
+  let gradedSaved = false;
+  guardLeave(root, () => ended || gradedSaved || !session || !session.started
+    || confirm(phase === 'grade'
+      ? 'Leave without saving the grade? The lesson ends for both of you and this recording will not be saved.'
+      : 'Leave the lesson? The call ends for both of you and this recording will not be saved.'));
   await mixer.resume();
   if (ended) return;
   mixer.add('me', stream);
@@ -285,6 +291,7 @@ async function teacherRoom(root, call, stream, studentName) {
           studentId: call.student_id, teacherId: call.teacher_id, callId: call.id,
           grade, comment, decision, blob,
         });
+        gradedSaved = true;
         link.send('graded', { id: saved.id, total: Number(grade.total) || 0, decision, comment });
         work.innerHTML = `
           <div class="card stack-s">
@@ -299,7 +306,7 @@ async function teacherRoom(root, call, stream, studentName) {
 
   async function leave(silent = false) {
     if (ended) return;
-    if (!silent && phase === 'live' && session.started && !confirm('Leave without grading? The recording of this session will not be saved.')) return;
+    if (!silent && (phase === 'live' || phase === 'grade') && session.started && !gradedSaved && !confirm('Leave without grading? The recording of this session will not be saved.')) return;
     // Only the Leave button ends the call. A reload or a closed tab can rejoin the same session.
     cloud.updateCall(call.id, { status: 'ended' }).catch(() => {});
     dispose();

@@ -161,14 +161,16 @@ export default function settingsView(root, params, { rerender }) {
           ${[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => `<button type="button" data-theme-opt="${k}" aria-pressed="${theme === k}">${l}</button>`).join('')}
         </div>
       </div>
-      <div class="card stack-s">
+      ${isTeacher ? `<div class="card stack-s">
         <h2>View</h2>
         <div class="seg" role="group" aria-label="View">
           <button type="button" data-role="student" aria-pressed="${!isTeacher}">Student</button>
           <button type="button" data-role="teacher" aria-pressed="${isTeacher}">Teacher</button>
         </div>
         <p class="xs muted">One app, two views. Teachers use the Teacher view; students the Student view.</p>
-      </div>
+      </div>` : `<a class="card row" href="#/apply" style="text-decoration:none;color:inherit">
+        <div class="grow"><h3>Want to teach Quran?</h3><div class="xs muted">Apply to become a verified teacher. Your student progress stays as it is.</div></div>
+        <span class="btn outline sm">Apply</span></a>`}
       <div class="card stack-s">
         <h2>Listening</h2>
         <div class="field"><label for="rec">Default reciter</label>

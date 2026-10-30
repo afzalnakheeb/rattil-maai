@@ -127,7 +127,7 @@ async function detail(root, id) {
       ${canReview ? `<a class="btn block" href="#/review/${link(h.id)}">${review ? 'Edit your review' : 'Review and grade this practice'}</a>` : ''}
       ${g ? `<div class="card stack-s">
         <div class="spread"><h2>${review && !h.grade ? 'Teacher review' : 'Grade'}</h2><span class="chip ${band(g.total).cls}">${n(g.total)} · ${esc(band(g.total).label)}</span></div>
-        ${[['hifz', 'Hifz accuracy', 40], ['tajweed', 'Tajweed', 30], ['makharij', 'Makharij', 20], ['waqf', 'Waqf and fluency', 10]].map(([k, l, max]) => `
+        ${[['hifz', 'Hifz accuracy', 40], ['tajweed', 'Tajweed', 30], ['makharij', 'Makharij (pronouncing letters)', 20], ['waqf', 'Waqf (stopping) and fluency', 10]].map(([k, l, max]) => `
           <div class="rubric-row"><span class="small">${l}</span><div class="bar"><i style="width:${Math.round((n(g[k]) / max) * 100)}%"></i></div><span class="small" style="text-align:right"><b>${n(g[k])}</b>/${max}</span></div>`).join('')}
         ${decision ? `<p class="small"><b>Decision:</b> ${decision === 'pass' ? 'Pass, next portion opens' : 'Repeat this portion'}</p>` : ''}
         ${comment ? `<p class="small"><b>Comment:</b> ${esc(comment)}</p>` : ''}

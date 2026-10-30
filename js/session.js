@@ -62,7 +62,7 @@ export class RecitationSession {
     this.items = items;
     this.matcher = new Matcher(words, (m) => this._aiMark(m));
     this.words = this.matcher.words;
-    if (ayahs.length) this.title = `${ayahs[0].surahEnglish} ${ayahs[0].ayah}–${ayahs[ayahs.length - 1].surah === ayahs[0].surah ? '' : ayahs[ayahs.length - 1].surahEnglish + ' '}${ayahs[ayahs.length - 1].ayah} · ${describePortions(this.portions)}`;
+    if (ayahs.length) this.title = `${ayahs[0].surahEnglish} ${ayahs[0].ayah} – ${ayahs[ayahs.length - 1].surah === ayahs[0].surah ? '' : ayahs[ayahs.length - 1].surahEnglish + ' '}${ayahs[ayahs.length - 1].ayah} · ${describePortions(this.portions)}`;
     return this;
   }
 
@@ -79,7 +79,16 @@ export class RecitationSession {
     this.running = true;
     if (this.record) {
       this.recording = await this.recorder.start(this.recordStream);
-      if (!this.recording) this.onNotice('Recording is not available on this device; marks are still saved.');
+      if (!this.recording && ['NotAllowedError', 'SecurityError'].includes(this.recorder.error)) {
+        // The microphone is blocked: go back to the start state and say how to allow it.
+        this.starting = false;
+        this.running = false;
+        this.onNotice('The microphone is blocked. Tap the lock icon next to the web address, allow the microphone, then tap the mic again.');
+        this.onUpdate();
+        return;
+      }
+      if (!this.recording && this.recorder.error === 'NotFoundError') this.onNotice('No microphone was found on this device.');
+      else if (!this.recording) this.onNotice('Recording is not available on this device; marks are still saved.');
     }
     this.starting = false;
     // Paused (or stopped) while the microphone was starting: honour that, do not start listening.

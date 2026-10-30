@@ -73,3 +73,26 @@ export function leave(page) {
 }
 // True while this view is still the one on screen.
 export const alive = (root) => !!root && root.isConnected;
+
+// A page can ask before the user navigates away (Back button, a tab, a link).
+// fn returns true to allow leaving. Only one guard at a time; it ends with its page.
+let navGuard = null;
+export function guardLeave(root, fn) {
+  navGuard = { root, fn };
+  onLeave(root, () => { if (navGuard && navGuard.root === root) navGuard = null; });
+}
+export function allowNav() {
+  if (!navGuard) return true;
+  if (!alive(navGuard.root)) { navGuard = null; return true; }
+  let ok = true;
+  try { ok = !!navGuard.fn(); } catch { ok = true; }
+  if (ok) navGuard = null;
+  return ok;
+}
+
+// Pages as people say them: ½, 1½, 3 (not 0.5).
+export function fmtPages(n) {
+  const v = Math.round((Number(n) || 0) * 2) / 2;
+  const whole = Math.floor(v);
+  return v % 1 ? `${whole || ''}½` : String(whole);
+}
