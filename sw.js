@@ -1,5 +1,5 @@
 // Offline support: the app shell is cached; Quran text is cached as it is read.
-const VERSION = 'rwm-v16';
+const VERSION = 'rwm-v17';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-small.svg', 'icons/icon-192.png',
   'js/app.js', 'js/store.js', 'js/ui.js', 'js/icons.js', 'js/arabic.js', 'js/quran.js', 'js/plan.js', 'js/adhkar.js',
@@ -22,6 +22,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
+  // The private decks area is never cached on the device.
+  if (url.origin === location.origin && url.pathname.startsWith('/decks')) return;
   // Quran text and fonts: cache first, refresh in the background.
   if (url.hostname === 'api.alquran.cloud' || url.hostname === 'cdn.jsdelivr.net' || url.hostname === 'esm.sh' || url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com')) {
     e.respondWith(caches.open('rwm-data').then(async (c) => {

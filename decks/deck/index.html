@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Recite With Me · Deck</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="viewport">
+  <div id="stage" role="region" aria-label="Recite With Me presentation">
+    <div id="pattern"></div>
+    <div class="chrome"><div class="brand"><img src="img/icon-512.png" alt="">Recite With Me <span lang="ar">رتّل معي</span></div><div class="url">rattilmai.com</div></div>
+    <div id="scenes"></div>
+    <div id="caption" aria-live="off"></div>
+  </div>
+</div>
+<nav id="deckbar" hidden aria-label="Slides">
+  <a href="/decks/" style="font:600 14px system-ui;color:#F4EFE2;opacity:.7;text-decoration:none;padding:12px">All decks</a>
+  <button type="button" id="prev" aria-label="Previous slide">‹</button>
+  <div id="dots"></div>
+  <span id="count">1 / 15</span>
+  <button type="button" id="replay" aria-label="Replay this slide">Replay</button>
+  <button type="button" id="next" aria-label="Next slide">›</button>
+</nav>
+<script type="module" src="deck.js"></script>
+</body>
+</html>

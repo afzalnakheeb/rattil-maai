@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <url><loc>https://rattilmai.com/</loc><lastmod>2026-10-30</lastmod><priority>1.0</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
-  <url><loc>https://rattilmai.com/about/</loc><lastmod>2026-10-30</lastmod><priority>0.9</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/about/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
-  <url><loc>https://rattilmai.com/faq/</loc><lastmod>2026-10-30</lastmod><priority>0.9</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/faq/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
-  <url><loc>https://rattilmai.com/ar/</loc><lastmod>2026-10-30</lastmod><priority>0.9</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/about/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
-  <url><loc>https://rattilmai.com/teach/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://rattilmai.com/privacy/</loc><lastmod>2026-10-30</lastmod><priority>0.3</priority></url>
-  <url><loc>https://rattilmai.com/terms/</loc><lastmod>2026-10-30</lastmod><priority>0.3</priority></url>
+  <url><loc>https://rattilmai.com/</loc><lastmod>2026-10-31</lastmod><priority>1.0</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
+  <url><loc>https://rattilmai.com/about/</loc><lastmod>2026-10-31</lastmod><priority>0.9</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/about/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
+  <url><loc>https://rattilmai.com/faq/</loc><lastmod>2026-10-31</lastmod><priority>0.9</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/faq/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
+  <url><loc>https://rattilmai.com/ar/</loc><lastmod>2026-10-31</lastmod><priority>0.9</priority><xhtml:link rel="alternate" hreflang="en" href="https://rattilmai.com/about/"/><xhtml:link rel="alternate" hreflang="ar" href="https://rattilmai.com/ar/"/></url>
+  <url><loc>https://rattilmai.com/teach/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://rattilmai.com/privacy/</loc><lastmod>2026-10-31</lastmod><priority>0.3</priority></url>
+  <url><loc>https://rattilmai.com/terms/</loc><lastmod>2026-10-31</lastmod><priority>0.3</priority></url>
 </urlset>

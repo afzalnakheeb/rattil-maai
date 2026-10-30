@@ -318,6 +318,7 @@ open('sitemap.xml', 'w').write('\n'.join(sm) + '\n')
 open('robots.txt', 'w').write(f'''# Recite With Me · رتّل معي
 User-agent: *
 Allow: /
+Disallow: /decks/
 
 # AI answer engines and assistants are welcome to read and cite the public pages.
 User-agent: GPTBot

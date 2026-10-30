@@ -1,0 +1,32 @@
+/* Single dark look, matching the film. */
+@font-face { font-family: "Alexandria"; src: url(deck/fonts/alex.ttf) format("truetype"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url(deck/fonts/plex.ttf) format("truetype"); font-weight: 100 700; font-display: swap; }
+:root { --bg: #051510; --panel: #0C241B; --ivory: #F4EFE2; --muted: rgba(244,239,226,.72); --line: rgba(244,239,226,.14); --gold: #D9B66A; --mint: #7FD3A8; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(1000px 520px at 80% -10%, rgba(47,143,104,.28), transparent 60%), var(--bg); color: var(--ivory); font: 16px/1.55 "IBM Plex Sans", system-ui, sans-serif; min-height: 100vh;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+main { max-width: 1040px; margin: 0 auto; display: grid; gap: 22px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.brand img { width: 40px; height: 40px; border-radius: 11px; }
+.brand b { font-family: "Alexandria", sans-serif; font-weight: 600; font-size: 18px; }
+.brand span { color: var(--gold); }
+.lock { color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; min-height: 44px; display: inline-flex; align-items: center; }
+h1 { font-family: "Alexandria", sans-serif; font-weight: 600; font-size: clamp(28px, 5vw, 46px); line-height: 1.12; margin: 8px 0 0; letter-spacing: -.5px; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--gold); }
+.lead { color: var(--muted); font-size: 17px; max-width: 64ch; margin: 0; }
+.block { display: grid; gap: 14px; margin-top: 10px; }
+.label { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--mint); font-weight: 600; }
+video { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #000; box-shadow: 0 30px 80px rgba(0,0,0,.5); display: block; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.chapter { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: flex; gap: 12px; align-items: baseline; color: var(--ivory); font: inherit; text-align: left; cursor: pointer; min-height: 44px; }
+.chapter:hover, .chapter:focus-visible { border-color: var(--gold); outline: none; }
+.chapter b { color: var(--gold); font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3em; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 999px; background: var(--gold); color: #2B2004; font-weight: 700; text-decoration: none; justify-self: start; }
+.btn.ghost { background: transparent; color: var(--ivory); border: 1px solid var(--line); font-weight: 600; }
+.deck-card { position: relative; display: block; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+.deck-card img { width: 100%; display: block; aspect-ratio: 16 / 9; object-fit: cover; }
+.deck-card .btn { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); }
+.deck-card:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.hint, .note { color: var(--muted); font-size: 14px; margin: 0; }
+.note { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 10px; }
