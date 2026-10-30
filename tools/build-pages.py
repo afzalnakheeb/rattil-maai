@@ -13,7 +13,8 @@ NAME_EN, NAME_AR = 'Recite With Me', 'رتّل معي'
 OG = f'{SITE}/icons/og-image.jpg'
 
 ORG = {'@type': 'Organization', '@id': f'{SITE}/#org', 'name': NAME_EN, 'alternateName': [NAME_AR, "Rattil Ma'i"],
-       'url': SITE + '/', 'logo': f'{SITE}/icons/icon-512.png'}
+       'url': SITE + '/', 'logo': f'{SITE}/icons/icon-512.png', 'email': 'contact@rattilmai.com',
+       'contactPoint': {'@type': 'ContactPoint', 'contactType': 'customer support', 'email': 'contact@rattilmai.com', 'availableLanguage': ['English', 'Arabic']}}
 SITE_LD = {'@type': 'WebSite', '@id': f'{SITE}/#website', 'name': NAME_EN, 'alternateName': NAME_AR, 'url': SITE + '/',
            'inLanguage': ['en', 'ar'], 'publisher': {'@id': f'{SITE}/#org'}}
 APP_LD = {'@type': 'WebApplication', '@id': f'{SITE}/#app', 'name': NAME_EN, 'alternateName': NAME_AR, 'url': SITE + '/',
@@ -268,7 +269,7 @@ pages['privacy/index.html'] = page('/privacy/', 'en',
 <h2>Your choices</h2>
 <p>You can delete your own recordings in the app, sign out at any time, and ask us to delete your account and all of its data. Children should use the app with a parent’s or teacher’s permission.</p>
 <h2>Contact</h2>
-<p>Questions or deletion requests: contact details for the Recite With Me team will be listed on this page.</p>
+<p>Questions, or a request to delete your account and its data: email <a href="mailto:contact@rattilmai.com">contact@rattilmai.com</a>. Send it from the Google account you sign in with, so we can find your data. We reply within a few days.</p>
 </article>''', [crumbs('Privacy', '/privacy/')])
 
 pages['terms/index.html'] = page('/terms/', 'en',
@@ -288,6 +289,8 @@ pages['terms/index.html'] = page('/terms/', 'en',
 <p>Do not misuse the service, attempt to access other people’s data, or use video sessions for anything other than learning.</p>
 <h2>Changes</h2>
 <p>We may improve or change the service and these terms. Continued use means you accept the updated terms.</p>
+<h2>Contact</h2>
+<p>Email <a href="mailto:contact@rattilmai.com">contact@rattilmai.com</a>.</p>
 </article>''', [crumbs('Terms', '/terms/')])
 
 # Landing pages for the links in parent report emails (not indexed).

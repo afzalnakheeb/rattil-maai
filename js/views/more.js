@@ -30,6 +30,12 @@ export default function moreView(root) {
             <span class="muted" aria-hidden="true">${icons.next.replace('<svg', '<svg width="18" height="18"')}</span>
           </a>`).join('')}
       </div>
+      <p class="xs muted" style="margin-top:6px;text-align:center;line-height:2">
+        <a href="/about/" target="_blank" rel="noopener">About</a> ·
+        <a href="/privacy/" target="_blank" rel="noopener">Privacy</a> ·
+        <a href="/terms/" target="_blank" rel="noopener">Terms</a> ·
+        <a href="mailto:contact@rattilmai.com">contact@rattilmai.com</a>
+      </p>
     </div>`;
   if (isCloud()) {
     cloud.amIAdmin().then((yes) => {
