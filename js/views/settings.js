@@ -3,6 +3,7 @@ import * as plan from '../plan.js';
 import * as cloud from '../cloud.js';
 import * as account from '../account.js';
 import { reciterOptions } from '../quran.js';
+import { TERM_CHOICES } from '../terms.js';
 import { esc, toast, loading } from '../ui.js';
 import { icons } from '../icons.js';
 import { avatar } from './teacher.js';
@@ -183,6 +184,8 @@ export default function settingsView(root, params, { rerender }) {
           <div class="field"><label for="mem">Pages memorized</label><input class="input" id="mem" type="number" min="0" max="604" value="${Math.floor(p.units / 2)}" inputmode="numeric"></div>
           <div class="row-wrap"><button class="btn sm" id="savePlan" type="button">Save plan</button><button class="btn ghost sm" id="newPlan" type="button">Start a new plan</button></div>`
           : '<p class="small muted">No plan yet. Switch to the Student view to set one.</p>'}
+        <div class="field"><label for="terms">Names for the daily parts</label><select class="input" id="terms">${TERM_CHOICES.map(([k, l]) => `<option value="${k}" ${(s.settings.planTerms || 'auto') === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+        <p class="xs muted">Arab tahfiz circles say الحفظ الجديد and المراجعة; South Asian madrasas say sabaq, sabqi and manzil. Same plan, different names.</p>
       </div>
       <div class="card stack-s">
         <h2>About</h2>
@@ -249,6 +252,7 @@ export default function settingsView(root, params, { rerender }) {
     location.hash = '#/';
     rerender();
   }));
+  root.querySelector('#terms')?.addEventListener('change', (e) => { store.update((x) => { x.settings.planTerms = e.target.value; }); toast('Saved'); });
   root.querySelector('#rec').addEventListener('change', (e) => { store.update((x) => { x.settings.reciter = e.target.value; }); toast('Reciter saved'); });
   root.querySelector('#savePlan')?.addEventListener('click', () => {
     store.update((x) => {

@@ -9,6 +9,7 @@ import * as cloud from '../cloud.js';
 import { isCloud } from '../account.js';
 import { computeTimes, nextPrayer, tzOffsetHours, optionsFrom } from '../prayer.js';
 import { avatar } from './teacher.js';
+import { planLabelHtml } from '../terms.js';
 import { isStandalone, openInstallSheet } from '../fullscreen.js';
 
 function nextPrayerLine(settings) {
@@ -30,9 +31,9 @@ function nextPrayerLine(settings) {
 }
 
 const ITEMS = [
-  { key: 'sabaq', title: 'New lesson · Sabaq', icon: 'book', tile: 'solid' },
-  { key: 'sabqi', title: 'Recent revision · Sabqi', icon: 'check', tile: '' },
-  { key: 'manzil', title: 'Old revision · Manzil', icon: 'repeat', tile: 'gold' },
+  { key: 'sabaq', icon: 'book', tile: 'solid' },
+  { key: 'sabqi', icon: 'check', tile: '' },
+  { key: 'manzil', icon: 'repeat', tile: 'gold' },
 ];
 
 // Rough time for a part, from how many pages it has: learning a page takes far longer than revising one.
@@ -88,7 +89,7 @@ export default function todayView(root) {
       ${newcomer ? '<div id="nextStep"></div>' : ''}
       <div id="feedback"></div>
       ${streakNow === 0 && best > 1 && !allDone ? `<div class="notice">Your best run is ${best} days. Start again today: even a small portion counts. The most beloved deeds are the most consistent, even if small.</div>` : ''}
-      ${t.complete ? `<div class="card gold stack-s"><h2>You have completed the whole Quran. Allahumma barik.</h2><p class="small">Keep your manzil every day so it stays strong.</p></div>` : ''}
+      ${t.complete ? `<div class="card gold stack-s"><h2>You have completed the whole Quran. Allahumma barik.</h2><p class="small">Keep your older revision every day so it stays strong.</p></div>` : ''}
       <div class="card stack">
         <div class="spread"><h2>Today's plan</h2><span class="small muted">${doneCount} of ${items.length} done</span></div>
         <div class="bar" aria-hidden="true"><i style="width:${pct}%"></i></div>
@@ -100,7 +101,7 @@ export default function todayView(root) {
             return `<div class="list-item${!d && it.key === 'sabaq' ? ' wrap-actions' : ''}">
               <div class="icon-tile ${d ? '' : it.tile}">${d ? icons.check : icons[it.icon]}</div>
               <div class="grow">
-                <h3 style="${d ? 'color:var(--ink-2)' : ''}">${it.title}</h3>
+                <h3 style="${d ? 'color:var(--ink-2)' : ''}">${planLabelHtml(it.key)}</h3>
                 <div class="small muted">${esc(describePortions(t[it.key]))}${d ? ' · done' : ` · about ${minutesFor(it.key, t[it.key])} min`}</div>
                 ${!d && it.key === 'sabaq' && firstLesson ? '<div class="xs muted" style="margin-top:4px">1. Listen and read along 5 times · 2. Recite from memory</div>' : ''}
               </div>
@@ -108,7 +109,7 @@ export default function todayView(root) {
                 : `<div class="row" style="gap:6px">
                     ${it.key === 'sabaq'
                       ? `<a class="btn outline sm" href="#/mushaf?page=${t[it.key][0].page}&part=${t[it.key][0].part}&loops=5" aria-label="Listen to the new lesson 5 times">${icons.play} Listen</a>`
-                      : `<a class="icon-btn" href="#/mushaf?page=${t[it.key][0].page}&part=${t[it.key][0].part}&loops=1" aria-label="Listen to ${it.title}">${icons.play}</a>`}
+                      : `<a class="icon-btn" href="#/mushaf?page=${t[it.key][0].page}&part=${t[it.key][0].part}&loops=1" aria-label="Listen to this part">${icons.play}</a>`}
                     <a class="btn sm" href="#/recite?plan=${it.key}">Recite</a>
                   </div>`}
             </div>`;
@@ -236,7 +237,7 @@ export function setupPlan(root, { onDone } = {}) {
       <div class="card stack-s">
         <label class="label" for="already">Pages already memorized on this track</label>
         <input class="input" id="already" type="number" min="0" max="604" value="0" inputmode="numeric">
-        <p class="xs muted">These count as memorized and go into your revision (sabqi and manzil).</p>
+        <p class="xs muted">These count as memorized and go into your recent and older revision.</p>
       </div>
       <button class="btn block" type="submit">Start my plan</button>
     </form>`;

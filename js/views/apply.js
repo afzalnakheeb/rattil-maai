@@ -318,6 +318,7 @@ export async function findTeacherView(root) {
     if (btn.disabled) return;
     btn.disabled = true;
     try {
+      if (main) store.update((x) => { x.settings.homeLang = main; });
       await cloud.requestTeacher({ preferred_teacher: pref || null, student_name: form.elements.sname.value, languages: langs, teacher_gender: form.querySelector('input[name="tg"]:checked')?.value || 'any', age_group: form.querySelector('input[name="age"]:checked')?.value || 'adult', level: form.elements.level.value, note: form.elements.note.value });
       toast('Request sent. We will match you soon.');
       findTeacherView(root);

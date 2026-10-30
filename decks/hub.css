@@ -30,3 +30,9 @@ video { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #000
 .deck-card:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 .hint, .note { color: var(--muted); font-size: 14px; margin: 0; }
 .note { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 10px; }
+.share { display: flex; flex-wrap: wrap; gap: 10px; }
+.sbtn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ivory); font-family: inherit; font-weight: 600; font-size: 15px; line-height: 1; text-decoration: none; cursor: pointer; }
+.sbtn svg { width: 20px; height: 20px; flex: none; }
+.sbtn.wa { background: #1FA855; border-color: #1FA855; color: #fff; }
+.sbtn:hover, .sbtn:focus-visible { border-color: var(--gold); outline: none; }
+.sbtn.wa:hover, .sbtn.wa:focus-visible { filter: brightness(1.08); }

@@ -7,6 +7,7 @@ import { TOTAL_PAGES, audioUrl, wordAudioUrl } from '../quran.js';
 import { esc, loading, errorBox, toast, todayKey, fmtTime, onLeave, alive } from '../ui.js';
 import { icons } from '../icons.js';
 import { minutesFor } from './today.js';
+import { planLabel, planLabelHtml } from '../terms.js';
 
 function portionsFromParams(params) {
   const s = store.get();
@@ -30,7 +31,7 @@ export default async function reciteView(root, params) {
   let hide = s.settings.hideText !== false;
   const supported = speechSupported();
   let finished = false;
-  const PLAN_LABEL = { sabaq: 'New lesson · Sabaq', sabqi: 'Recent revision · Sabqi', manzil: 'Old revision · Manzil' };
+  const PLAN_LABEL = { sabaq: planLabel('sabaq'), sabqi: planLabel('sabqi'), manzil: planLabel('manzil') };
 
   root.innerHTML = loading('Preparing');
   const session = new RecitationSession({
@@ -290,9 +291,9 @@ function chooser(root) {
       <div class="page-head"><h1>Recite</h1><p class="muted small">Recite from memory. The AI follows you word by word and marks skipped or wrong words.</p></div>
       ${s.plan ? `<div class="card stack-s">
         <h2>From today's plan</h2>
-        <a class="btn block" href="#/recite?plan=sabaq">New lesson · Sabaq</a>
-        <a class="btn outline block" href="#/recite?plan=sabqi">Recent revision · Sabqi</a>
-        <a class="btn outline block" href="#/recite?plan=manzil">Old revision · Manzil</a>
+        <a class="btn block" href="#/recite?plan=sabaq">${planLabelHtml('sabaq')}</a>
+        <a class="btn outline block" href="#/recite?plan=sabqi">${planLabelHtml('sabqi')}</a>
+        <a class="btn outline block" href="#/recite?plan=manzil">${planLabelHtml('manzil')}</a>
       </div>` : ''}
       <form class="card stack-s" id="pickForm">
         <h2>Any page</h2>

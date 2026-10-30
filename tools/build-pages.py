@@ -22,8 +22,8 @@ APP_LD = {'@type': 'WebApplication', '@id': f'{SITE}/#app', 'name': NAME_EN, 'al
           'browserRequirements': 'Requires JavaScript. The AI check needs Chrome, Edge or Safari.',
           'inLanguage': ['en', 'ar'], 'isAccessibleForFree': True, 'image': OG,
           'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
-          'description': 'Free Quran memorization (hifz) app: daily sabaq, sabqi and manzil plan, AI word-by-word recitation check, free live video sessions with your teacher, parent reports, adhkar, duas, Ruqyah, prayer times and Qibla.',
-          'featureList': ['Daily hifz plan: sabaq, sabqi, manzil', 'AI recitation check word by word with the correct word played back',
+          'description': 'Free Quran memorization (hifz) app: daily plan of new lesson, recent and older revision (muraja\'a), AI word-by-word recitation check, free live video sessions with your teacher, parent reports, adhkar, duas, Ruqyah, prayer times and Qibla.',
+          'featureList': ['Daily hifz plan: new lesson, recent revision (muraja\'a) and older revision', 'AI recitation check word by word with the correct word played back',
                           'Madinah Mushaf (Hafs) with 34 reciters, including the imams of al-Haram and an-Nabawi, ayah highlighting and repeat', 'Free 1:1 video sessions with live teacher marks and grading out of 100',
                           'Weekly and monthly reports for parents', 'Morning and evening adhkar with counter', 'Short and full Ruqyah and a Hisn al-Muslim duas library',
                           'Prayer times (Umm al-Qura, UAE Awqaf and more) and Qibla compass', 'Light and dark mode, works offline'],
@@ -40,8 +40,8 @@ FAQ_EN = [
    'You recite from memory while the words stay hidden. The app listens through your browser’s speech engine, follows you word by word, and reveals each word as you say it. If you skip a word, say the wrong word or add one, it marks it straight away and lets you play the correct word or the whole ayah. It checks the words, not the rules of tajweed, and it does not replace a teacher.'),
   ('Can my teacher listen to me online?',
    'Yes. The teacher shares a 6-letter class code; the student joins with it. The teacher can then start a free video session from the app. The AI listens on the student’s phone and the teacher sees its suggestions live, confirms or dismisses them, adds marks of their own, and grades the recitation out of 100 with a pass or repeat decision. The whole session is recorded with every mark.'),
-  ('What are sabaq, sabqi and manzil?',
-   'They are the three parts of the traditional daily hifz routine. Sabaq is the new lesson memorized today; sabqi is the revision of the recent lessons (in the app, the last 10 pages); manzil is the revision of older portions (20 pages in rotation). You choose half a page, one page or two pages of new memorization each day.'),
+  ('What are the three daily parts: new lesson, recent revision and older revision?',
+   'They are the traditional daily hifz routine. The new lesson is today\'s new portion; the recent revision covers the last pages learned (in the app, the last 10 pages); the older revision rotates through everything memorized before (20 pages at a time). Arab tahfiz circles call them الحفظ الجديد (new memorization), المراجعة القريبة and المراجعة البعيدة (recent and older revision); madrasas in South Asia call them sabaq, sabqi and manzil. The app uses the names that match your language, and you can change them in Settings. You choose half a page, one page or two pages of new memorization each day.'),
   ('How can parents follow their child’s progress?',
    'The app makes weekly and monthly reports: days active, time spent reciting, new pages, AI accuracy, teacher grades and comments, the number and type of mistakes, the exact words to revise, and adhkar completed. Reports can be shared on WhatsApp or saved as a PDF.'),
   ('Do I need an account?',
@@ -170,7 +170,7 @@ pages['about/index.html'] = page('/about/', 'en',
 <div class="cta"><a class="btn" href="/">Open the app</a><a class="btn outline" href="/faq/">Read the FAQ</a></div>
 <h2>For students</h2>
 <ul>
-<li><b>A daily hifz plan</b> with the new lesson (sabaq), recent revision (sabqi) and old revision (manzil). Choose half a page, one page or two pages a day.</li>
+<li><b>A daily hifz plan</b> with the new lesson (الحفظ الجديد, sabaq), recent revision (المراجعة, sabqi) and older revision (manzil). Choose half a page, one page or two pages a day.</li>
 <li><b>Listen first</b> in a page-by-page Madinah Mushaf with 34 reciters, including the imams of al-Haram and an-Nabawi, ayah highlighting, repeat and speed control.</li>
 <li><b>Recite from memory</b> while the words stay hidden. The AI follows you word by word, marks skipped, wrong and extra words straight away, and plays the correct word or ayah.</li>
 <li><b>Every recitation is recorded</b> with its marks, so you can hear the exact moment of each mistake.</li>
