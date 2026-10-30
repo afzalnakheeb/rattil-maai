@@ -1,4 +1,4 @@
-import { getPage, getMeta, pageOf, juzStartPage, RECITERS, TOTAL_PAGES, slicePart } from '../quran.js';
+import { getPage, getMeta, pageOf, juzStartPage, reciterOptions, TOTAL_PAGES, slicePart } from '../quran.js';
 import { Player } from '../player.js';
 import * as store from '../store.js';
 import { esc, arNum, loading, errorBox, toast, alive, onLeave } from '../ui.js';
@@ -80,7 +80,7 @@ export default async function mushafView(root, params) {
           <div class="icon-tile">${icons.book}</div>
           <div class="grow">
             <label class="sr-only" for="recSel">Reciter</label>
-            <select class="input" id="recSel">${RECITERS.map((r) => `<option value="${r.id}" ${r.id === s.settings.reciter ? 'selected' : ''}>${esc(r.name)} · ${esc(r.note)}</option>`).join('')}</select>
+            <select class="input" id="recSel">${reciterOptions(s.settings.reciter)}</select>
           </div>
         </div>
         <div class="small muted" id="plStatus">Tap play, or tap any ayah to start from it.</div>
@@ -100,7 +100,7 @@ export default async function mushafView(root, params) {
             </div></div>
         </div>
       </div>
-      <p class="footer-note">Text: Tanzil (Madinah Mushaf, Hafs). Audio: Islamic Network.</p>
+      <p class="footer-note">Text: Tanzil (Madinah Mushaf, Hafs). Audio: Islamic Network and EveryAyah.</p>
     </div>`;
 
   const body = root.querySelector('#pageBody');

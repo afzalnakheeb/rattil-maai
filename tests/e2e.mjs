@@ -245,6 +245,7 @@ const SPEECH_MOCK = `
 `;
 
 const errors = [];
+const audioRequests = [];
 const window_word_requests = [];
 const results = [];
 const check = (name, ok, extra = '') => { results.push({ name, ok, extra }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? '  · ' + extra : ''}`); };
@@ -267,6 +268,7 @@ async function newPage(viewport, identity = { email: 'user@gmail.com', name: 'Us
     route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ code: 200, status: 'OK', data }) });
   });
   await ctx.route('https://cdn.islamic.network/**', (route) => route.fulfill({ status: 200, contentType: 'audio/wav', body: wav() }));
+  await ctx.route('https://everyayah.com/**', (route) => { audioRequests.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'audio/wav', body: wav() }); });
   await ctx.route('https://audio.qurancdn.com/**', (route) => { window_word_requests.push(route.request().url()); route.fulfill({ status: 200, contentType: 'audio/wav', body: wav() }); });
   await ctx.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   await ctx.route('https://fonts.gstatic.com/**', (route) => route.fulfill({ status: 404, body: '' }));
@@ -323,6 +325,11 @@ try {
   await page.click('#plToggle');
   await page.waitForSelector('.ayah.playing', { timeout: 5000 });
   check('Playing highlights the current ayah', true);
+  check('34 reciters in groups, imams of al-Haram and an-Nabawi first', (await page.locator('#recSel option').count()) === 34 && /Imams of al-Haram/.test(await page.locator('#recSel optgroup').first().getAttribute('label')));
+  await page.selectOption('#recSel', 'ea.yasser');
+  await page.waitForTimeout(800);
+  check('Yasser ad-Dosari plays ayah by ayah from EveryAyah', audioRequests.some((u) => /Yasser_Ad-Dussary_128kbps\/001001\.mp3$/.test(u) || /Yasser_Ad-Dussary_128kbps\/00100\d\.mp3$/.test(u)), audioRequests.slice(-2).join(' '));
+  await page.selectOption('#recSel', 'ar.husary');
   await page.click('#plToggle');
 
   // Recite sabaq with mistakes

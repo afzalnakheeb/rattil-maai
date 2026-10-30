@@ -2,7 +2,7 @@ import * as store from '../store.js';
 import * as plan from '../plan.js';
 import * as cloud from '../cloud.js';
 import * as account from '../account.js';
-import { RECITERS } from '../quran.js';
+import { reciterOptions } from '../quran.js';
 import { esc, toast, loading } from '../ui.js';
 import { icons } from '../icons.js';
 import { avatar } from './teacher.js';
@@ -170,7 +170,7 @@ export default function settingsView(root, params, { rerender }) {
       <div class="card stack-s">
         <h2>Listening</h2>
         <div class="field"><label for="rec">Default reciter</label>
-          <select class="input" id="rec">${RECITERS.map((r) => `<option value="${r.id}" ${r.id === s.settings.reciter ? 'selected' : ''}>${esc(r.name)} · ${esc(r.note)}</option>`).join('')}</select></div>
+          <select class="input" id="rec">${reciterOptions(s.settings.reciter)}</select></div>
       </div>
       <div class="card stack-s">
         <h2>Hifz plan</h2>
@@ -182,7 +182,7 @@ export default function settingsView(root, params, { rerender }) {
       </div>
       <div class="card stack-s">
         <h2>About</h2>
-        <p class="small">Recite With Me · <span lang="ar">رتّل معي</span>. Quran text: Tanzil Uthmani (Madinah Mushaf, Hafs), via Al Quran Cloud. Recitations: Islamic Network CDN. Adhkar and duas: Hisn al-Muslim.</p>
+        <p class="small">Recite With Me · <span lang="ar">رتّل معي</span>. Quran text: Tanzil Uthmani (Madinah Mushaf, Hafs), via Al Quran Cloud. Recitations: Islamic Network CDN and EveryAyah.com, ayah by ayah. Adhkar and duas: Hisn al-Muslim.</p>
         <p class="small muted">The AI check uses your browser's speech engine. It checks words, not tajweed, and never replaces a teacher. Video calls connect your two devices directly and are encrypted.</p>
       </div>
       ${!cloudOn ? `<div class="card stack-s">

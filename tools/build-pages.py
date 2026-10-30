@@ -23,7 +23,7 @@ APP_LD = {'@type': 'WebApplication', '@id': f'{SITE}/#app', 'name': NAME_EN, 'al
           'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
           'description': 'Free Quran memorization (hifz) app: daily sabaq, sabqi and manzil plan, AI word-by-word recitation check, free live video sessions with your teacher, parent reports, adhkar, duas, Ruqyah, prayer times and Qibla.',
           'featureList': ['Daily hifz plan: sabaq, sabqi, manzil', 'AI recitation check word by word with the correct word played back',
-                          'Madinah Mushaf (Hafs) with 8 reciters, ayah highlighting and repeat', 'Free 1:1 video sessions with live teacher marks and grading out of 100',
+                          'Madinah Mushaf (Hafs) with 34 reciters, including the imams of al-Haram and an-Nabawi, ayah highlighting and repeat', 'Free 1:1 video sessions with live teacher marks and grading out of 100',
                           'Weekly and monthly reports for parents', 'Morning and evening adhkar with counter', 'Short and full Ruqyah and a Hisn al-Muslim duas library',
                           'Prayer times (Umm al-Qura, UAE Awqaf and more) and Qibla compass', 'Light and dark mode, works offline'],
           'publisher': {'@id': f'{SITE}/#org'}}
@@ -34,7 +34,7 @@ FAQ_EN = [
   ('Is Recite With Me free?',
    'Yes. The app is free to use and has no ads. Video sessions between a teacher and a student are free as well.'),
   ('Which Quran text and recitation standard does it follow?',
-   'It follows the standard of Masjid al-Haram and Masjid an-Nabawi: the riwayah of Hafs ʿan ʿĀṣim and the Uthmani script of the Madinah Mushaf (Tanzil text). You can listen to eight reciters, including Mahmoud Khalil al-Husary, al-Minshawi, Abdur-Rahman as-Sudais, Saud ash-Shuraim, Ali al-Hudhaify, Mishary Alafasy, Abdul Basit and al-Ajamy.'),
+   'It follows the standard of Masjid al-Haram and Masjid an-Nabawi: the riwayah of Hafs ʿan ʿĀṣim and the Uthmani script of the Madinah Mushaf (Tanzil text). You can listen to 34 reciters ayah by ayah, including the imams of al-Haram and an-Nabawi (as-Sudais, ash-Shuraim, Maher al-Muaiqly, Yasser ad-Dosari, Abdullah al-Juhany, Ali al-Hudhaify, Salah al-Budair), teachers such as al-Husary (including his teaching style) and Ayman Suwayd, and Abdul Basit, al-Minshawi, Mishary Alafasy, Saad al-Ghamdi and others.'),
   ('How does the AI recitation check work?',
    'You recite from memory while the words stay hidden. The app listens through your browser’s speech engine, follows you word by word, and reveals each word as you say it. If you skip a word, say the wrong word or add one, it marks it straight away and lets you play the correct word or the whole ayah. It checks the words, not the rules of tajweed, and it does not replace a teacher.'),
   ('Can my teacher listen to me online?',
@@ -59,7 +59,7 @@ FAQ_AR = [
   ('ما هو تطبيق «رتّل معي»؟',
    '«رتّل معي» (Recite With Me) تطبيق مجاني على الويب لحفظ القرآن الكريم. يضع لكل طالب خطة يومية (الدرس الجديد، والمراجعة القريبة، والمراجعة البعيدة)، ويستمع إلى تلاوتك ويحدّد الأخطاء كلمةً كلمة، ويتيح للمعلم جلسات فيديو مباشرة مجانية يؤكد فيها ملاحظات الذكاء الاصطناعي ويضيف ملاحظاته ويقيّم التلاوة. ويضم أيضًا الأذكار والأدعية والرقية الشرعية ومواقيت الصلاة واتجاه القبلة وتقارير أسبوعية لأولياء الأمور.'),
   ('هل التطبيق مجاني؟', 'نعم، التطبيق مجاني بالكامل ومن دون إعلانات، وجلسات الفيديو بين المعلم والطالب مجانية أيضًا.'),
-  ('ما الرواية والمصحف المعتمدان؟', 'يعتمد التطبيق رواية حفص عن عاصم والرسم العثماني لمصحف المدينة النبوية، على منهج المسجد الحرام والمسجد النبوي، مع ثمانية قرّاء منهم الحصري والمنشاوي والسديس والشريم والحذيفي والعفاسي وعبد الباسط والعجمي.'),
+  ('ما الرواية والمصحف المعتمدان؟', 'يعتمد التطبيق رواية حفص عن عاصم والرسم العثماني لمصحف المدينة النبوية، على منهج المسجد الحرام والمسجد النبوي، مع ٣٤ قارئًا آيةً آية، منهم أئمة الحرمين: السديس والشريم والمعيقلي والدوسري والجهني والحذيفي والبدير، والحصري (ومنه المصحف المعلم) وأيمن سويد والمنشاوي وعبد الباسط والعفاسي والغامدي.'),
   ('كيف يعمل التصحيح بالذكاء الاصطناعي؟', 'تتلو من حفظك والكلمات مخفية، فيتابعك التطبيق كلمةً كلمة ويُظهر كل كلمة عند نطقها. إذا أسقطت كلمة أو أخطأت فيها أو زدت كلمة ظهر الخطأ فورًا مع زر لسماع الكلمة الصحيحة أو الآية كاملة. يتحقق من الكلمات لا من أحكام التجويد، ولا يغني عن المعلم.'),
   ('كيف يتابعني المعلم عن بُعد؟', 'يشارك المعلم رمز الحلقة المكوّن من ستة أحرف، فينضم الطالب به، ثم يبدأ المعلم جلسة فيديو مجانية. يستمع الذكاء الاصطناعي على جهاز الطالب ويرى المعلم اقتراحاته مباشرة فيؤكدها أو يرفضها ويضيف ملاحظاته، ثم يمنح درجة من مئة مع قرار النجاح أو الإعادة، وتُسجَّل الجلسة كاملة.'),
   ('كيف يتابع ولي الأمر تقدّم ابنه؟', 'يُعدّ التطبيق تقارير أسبوعية وشهرية تشمل أيام النشاط ومدة التلاوة والصفحات الجديدة ودرجات المعلم وملاحظاته وعدد الأخطاء ونوعها والكلمات التي تحتاج إلى مراجعة والأذكار المنجزة، ويمكن مشاركتها عبر واتساب أو حفظها PDF.'),
@@ -170,7 +170,7 @@ pages['about/index.html'] = page('/about/', 'en',
 <h2>For students</h2>
 <ul>
 <li><b>A daily hifz plan</b> with the new lesson (sabaq), recent revision (sabqi) and old revision (manzil). Choose half a page, one page or two pages a day.</li>
-<li><b>Listen first</b> in a page-by-page Madinah Mushaf with eight reciters, ayah highlighting, repeat and speed control.</li>
+<li><b>Listen first</b> in a page-by-page Madinah Mushaf with 34 reciters, including the imams of al-Haram and an-Nabawi, ayah highlighting, repeat and speed control.</li>
 <li><b>Recite from memory</b> while the words stay hidden. The AI follows you word by word, marks skipped, wrong and extra words straight away, and plays the correct word or ayah.</li>
 <li><b>Every recitation is recorded</b> with its marks, so you can hear the exact moment of each mistake.</li>
 </ul>
@@ -186,7 +186,7 @@ pages['about/index.html'] = page('/about/', 'en',
 <h2>Daily worship</h2>
 <p>Morning, evening, after-prayer and sleep adhkar with a counter; short and full Ruqyah; a Hisn al-Muslim duas library; prayer times by your country’s method (Umm al-Qura, UAE Awqaf, Muslim World League and more) with a Qibla compass. Quranic texts always come from the Mushaf text, never retyped.</p>
 <h2>Sources</h2>
-<p>Quran text: Tanzil Uthmani (Madinah Mushaf, Hafs) via Al Quran Cloud. Recitations: Islamic Network CDN. Adhkar and duas: Hisn al-Muslim, with references. Fonts: Alexandria, IBM Plex Sans and Amiri Quran.</p>
+<p>Quran text: Tanzil Uthmani (Madinah Mushaf, Hafs) via Al Quran Cloud. Recitations: Islamic Network CDN and EveryAyah.com, ayah by ayah. Adhkar and duas: Hisn al-Muslim, with references. Fonts: Alexandria, IBM Plex Sans and Amiri Quran.</p>
 </article>''', [APP_LD, crumbs('About', '/about/')], alt=[('en', '/about/'), ('ar', '/ar/'), ('x-default', '/')])
 
 pages['faq/index.html'] = page('/faq/', 'en',
@@ -209,7 +209,7 @@ pages['ar/index.html'] = page('/ar/', 'ar',
 <p class="lead">«رتّل معي» تطبيق مجاني على الويب لحفظ القرآن الكريم على منهج المسجد الحرام والمسجد النبوي: رواية حفص عن عاصم ومصحف المدينة النبوية.</p>
 <div class="cta"><a class="btn" href="/">افتح التطبيق</a></div>
 <div class="grid2">
-<div class="card"><h3>للطالب</h3><p>خطة يومية للدرس الجديد والمراجعة القريبة والبعيدة، واستماع لثمانية قرّاء مع تظليل الآية، وتلاوة من الحفظ يتابعها الذكاء الاصطناعي كلمةً كلمة ويُسمعك الصواب فورًا.</p></div>
+<div class="card"><h3>للطالب</h3><p>خطة يومية للدرس الجديد والمراجعة القريبة والبعيدة، واستماع لـ٣٤ قارئًا منهم أئمة الحرمين مع تظليل الآية، وتلاوة من الحفظ يتابعها الذكاء الاصطناعي كلمةً كلمة ويُسمعك الصواب فورًا.</p></div>
 <div class="card"><h3>للمعلّم</h3><p>رمز للحلقة، وجلسات فيديو مباشرة مجانية تظهر فيها ملاحظات الذكاء الاصطناعي، وتقييم من مئة مع قرار النجاح أو الإعادة، وتسجيل كامل للجلسة.</p></div>
 <div class="card"><h3>لولي الأمر</h3><p>تقارير أسبوعية وشهرية بالأيام والمدة والصفحات الجديدة والأخطاء والكلمات التي تحتاج إلى مراجعة وملاحظات المعلم، قابلة للمشاركة عبر واتساب.</p></div>
 <div class="card"><h3>للعبادة اليومية</h3><p>أذكار الصباح والمساء وبعد الصلاة والنوم مع عدّاد، والرقية الشرعية المختصرة والكاملة، وحصن المسلم، ومواقيت الصلاة واتجاه القبلة.</p></div>
@@ -340,7 +340,7 @@ open('llms.txt', 'w').write(f'''# Recite With Me (رتّل معي)
 ## Key facts
 - Price: free, no advertising
 - Standard: riwayah Hafs ʿan ʿĀṣim, Uthmani script of the Madinah Mushaf (Tanzil text)
-- Reciters: al-Husary, al-Minshawi, as-Sudais, ash-Shuraim, al-Hudhaify, Alafasy, Abdul Basit, al-Ajamy
+- Reciters: 34, ayah by ayah — as-Sudais, ash-Shuraim, Maher al-Muaiqly, Yasser ad-Dosari, al-Juhany, al-Hudhaify, al-Budair, al-Husary (also Muʿallim), Ayman Suwayd, al-Minshawi, Abdul Basit, Alafasy, al-Ghamdi and more
 - AI check: browser speech recognition, word level (skipped, wrong, extra words); not tajweed
 - Teacher sessions: class code, free 1:1 video in the browser, live AI suggestions, teacher marks, grade out of 100 (hifz 40, tajweed 30, makharij 20, waqf 10), pass or repeat, full recording
 - Parent reports: weekly and monthly; mistakes by type, words to revise, teacher feedback, adhkar
