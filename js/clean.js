@@ -160,6 +160,7 @@ export function cleanTeacher(t) {
     teaches: (Array.isArray(t.teaches) ? t.teaches : []).filter((x) => TEACHES.some((k) => k[0] === x)),
     bio: str(t.bio, 1200), availability: str(t.availability, 400),
     capacity: int(t.capacity, 10, 0, 200), accepting: t.accepting !== false, approved_at: str(t.approved_at, 40),
+    verified: t.verified !== false,
   };
 }
 
@@ -195,6 +196,6 @@ export function matchTeachers(req, teachers) {
         + (genderOk ? 40 : -100) + (room ? 30 : -60) + kids * 10 - (t.capacity ? (t.students / t.capacity) * 20 : 20);
       return { teacher: t, shared, room, genderOk, sameMother, speaksMain, chosen, score };
     })
-    .filter((m) => m.shared.length && m.genderOk)
+    .filter((m) => m.teacher.verified && m.shared.length && m.genderOk)
     .sort((a, b) => b.score - a.score);
 }

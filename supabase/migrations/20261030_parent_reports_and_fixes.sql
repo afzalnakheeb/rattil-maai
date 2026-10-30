@@ -1,0 +1,7 @@
+-- Applied 30 Oct 2026:
+--  teacher_requests_preferred_teacher, parent_report_emails, report_recipients_remove_policy,
+--  parent_report_server_functions, parent_reports_hourly_job (pg_cron '7 * * * *' -> functions/v1/reports {action:'run'}),
+--  teacher_verified_flag_and_assign_guard, links_ended_and_admin_unassign.
+-- public.report_recipients: up to 3 parent emails per student; confirmed by email (private.report_tokens);
+-- server-only changes through report_* functions (service role). teacher_profiles.verified; links.ended_at
+-- (ended links are history: is_teacher_of / is_linked ignore them); admin_unassign; teacher_open_seats().

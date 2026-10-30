@@ -587,3 +587,8 @@ audio { width: 100%; }
 .recitation-check { border-radius: 14px; padding: 12px; background: var(--gold-tint); display: flex; flex-direction: column; gap: 8px; }
 .recitation-check.missing { background: var(--red-tint); }
 .phase-card.open { border: 1.5px solid var(--gold); background: var(--gold-tint); }
+/* Long emails, links and names wrap instead of pushing the layout sideways. */
+.card, .list-item, .teacher-pick, .kv b { overflow-wrap: anywhere; }
+.spread > *, .row > .grow, .list-item > .grow { min-width: 0; }
+.admin-grid { grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); }
+.admin-grid > * { min-width: 0; }

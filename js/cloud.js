@@ -358,9 +358,14 @@ export async function reviewApplication(id, decision, note = '', cap = 10) {
 export async function listTeachers() {
   need();
   const rows = check(await sb.from('teacher_profiles').select('*').order('approved_at', { ascending: true }));
-  let load = [];
+  let load = []; let seats = [];
   try { load = check(await sb.rpc('teacher_load')) || []; } catch { /* not admin */ }
-  return rows.map((r) => ({ ...cleanTeacher(r), students: Number(load.find((x) => x.teacher_id === r.user_id)?.students || 0) }));
+  try { seats = check(await sb.rpc('teacher_open_seats')) || []; } catch { /* older database */ }
+  return rows.map((r) => {
+    const t = cleanTeacher(r);
+    const seat = seats.find((x) => x.teacher_id === r.user_id);
+    return { ...t, students: Number(load.find((x) => x.teacher_id === r.user_id)?.students || 0), hasRoom: seat ? !!seat.has_room : t.accepting };
+  });
 }
 
 export async function teacherProfile(id) {
@@ -397,6 +402,11 @@ export async function listRequests() {
   const rows = check(await sb.from('teacher_requests').select('*').order('created_at', { ascending: true }));
   const people = await names(rows.map((r) => r.student_id));
   return rows.map((r) => ({ ...cleanRequest(r), email: people[r.student_id]?.email || '', avatar_url: people[r.student_id]?.avatar_url || '' }));
+}
+
+export async function unassignTeacher(studentId, teacherId) {
+  need();
+  check(await sb.rpc('admin_unassign', { student: studentId, teacher: teacherId }));
 }
 
 export async function assignTeacher(studentId, teacherId) {
@@ -447,4 +457,40 @@ export async function academySettings() {
 export async function setOpenTeaching(open) {
   need();
   check(await sb.rpc('admin_set_open_teaching', { is_open: !!open }));
+}
+
+// ---- Parent report emails ----
+const emailOk = (e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) && e.length <= 200;
+export async function listReportRecipients() {
+  need();
+  const rows = check(await sb.from('report_recipients').select('id,email,name,weekly,monthly,tz,confirmed_at,unsubscribed_at,last_weekly_at,last_monthly_at,created_at').eq('student_id', me.id).order('created_at'));
+  return rows.map((r) => ({ ...r, email: String(r.email || '').slice(0, 200), name: String(r.name || '').slice(0, 60) }));
+}
+export async function addReportRecipient({ email, name = '', weekly = true, monthly = true }) {
+  need();
+  const e = String(email || '').trim().toLowerCase();
+  if (!emailOk(e)) throw new Error('Enter a valid email address');
+  let tz = 'Asia/Dubai';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch { /* default */ }
+  return check(await sb.from('report_recipients').insert({ student_id: me.id, email: e, name: String(name).slice(0, 60), weekly, monthly, tz }).select('id').single());
+}
+export async function updateReportRecipient(id, patch) {
+  need();
+  const allowed = {};
+  ['name', 'weekly', 'monthly', 'unsubscribed_at'].forEach((k) => { if (k in patch) allowed[k] = patch[k]; });
+  check(await sb.from('report_recipients').update(allowed).eq('id', id));
+}
+export async function removeReportRecipient(id) {
+  need();
+  check(await sb.from('report_recipients').delete().eq('id', id));
+}
+export async function reportEmail(action, id, kind = 'week') {
+  await init();
+  const { data, error } = await withTimeout(sb.functions.invoke('reports', { method: 'POST', body: { action, id, kind } }), 20000);
+  if (error) {
+    let msg = error.message || 'failed';
+    try { const b = await error.context?.json?.(); if (b?.error) msg = b.error; } catch { /* keep */ }
+    throw new Error(msg);
+  }
+  return data;
 }

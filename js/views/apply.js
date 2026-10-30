@@ -42,7 +42,7 @@ function wireMain(form, name, onChange = () => {}) {
 const checked = (form, name) => [...form.querySelectorAll(`input[name="${name}"]:checked`)].map((x) => x.value);
 
 function limitPicks(root) {
-  root.querySelectorAll('.pick-grid[data-max]').forEach((g) => g.addEventListener('change', (e) => {
+  root.querySelectorAll('.pick-grid[data-max], .pill-picks[data-max]').forEach((g) => g.addEventListener('change', (e) => {
     const max = +g.dataset.max;
     if (g.querySelectorAll('input:checked').length > max) { e.target.checked = false; toast(`Choose up to ${max}.`); }
   }));
@@ -57,7 +57,7 @@ export function teacherCard(t, { extra = '' } = {}) {
         <span class="avatar" style="width:52px;height:52px;font-size:20px">${esc((t.name || '?').slice(0, 1).toUpperCase())}</span>
         <div class="grow"><h3>${esc(t.name)}</h3>
           <div class="xs muted">${t.gender === 'female' ? 'Female teacher' : 'Male teacher'}${t.country ? ` · ${esc(t.country)}` : ''} · ${years} ${years === 1 ? 'year' : 'years'} teaching</div></div>
-        <span class="chip">${icons.check.replace('<svg', '<svg width="13" height="13"')} Verified</span>
+        ${t.verified === false ? '<span class="chip red">Not verified</span>' : `<span class="chip">${icons.check.replace('<svg', '<svg width="13" height="13"')} Verified</span>`}
       </div>
       <div class="row-wrap">${t.languages.map((l, i) => `<span class="chip ${i === 0 ? '' : 'plain'}">${esc(langName(l))}${i === 0 ? ' · mother tongue' : ''}</span>`).join('')}</div>
       ${t.ijazah ? `<p class="small"><b>Ijazah:</b> ${esc(t.ijazah)}</p>` : ''}
@@ -71,7 +71,7 @@ export function teacherCard(t, { extra = '' } = {}) {
 const STATUS_NOTE = {
   pending: ['gold', 'Under review', 'We review every application. You will see the result here.'],
   approved: ['', 'Approved', 'You are a verified teacher. Students who speak your languages will be assigned to you, and they appear on your Home screen.'],
-  declined: ['red', 'Not approved', ''],
+  declined: ['red', 'Not approved', 'The academy did not approve this application. You can contact the academy to ask why, or improve your recitation and apply again later.'],
 };
 
 // ===================== Teach with us =====================
@@ -110,7 +110,7 @@ export async function applyView(root) {
           <div class="field" style="flex:1 1 160px"><label for="aCountry">Country</label><input class="input" id="aCountry" name="country" value="${esc(a.country)}" maxlength="60" autocomplete="country-name"></div>
         </div>
         <div class="field"><span class="label">Your mother tongue (the language you speak best)</span>${mainLanguagePicker('main', a.languages[0] || '')}</div>
-        <div class="field"><span class="label">Other languages you can also teach in</span><p class="xs muted" style="margin:0">Tap all that apply. Students who speak any of them can be matched with you.</p>${langPicker('lang', a.languages.slice(1), { compact: true })}</div>
+        <div class="field"><span class="label">Other languages you can also teach in</span><p class="xs muted" style="margin:0">Tap all that apply. Students who speak any of them can be matched with you.</p>${langPicker('lang', a.languages.slice(1), { compact: true, max: MAX_LANGS - 1 })}</div>
         <div class="field"><span class="label">What you teach</span>
           <div class="pick-grid">${TEACHES.map(([k, l]) => `<label class="pick"><input type="checkbox" name="teaches" value="${k}" ${a.teaches.includes(k) ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</div></div>
         <div class="field"><label for="aIjazah">Ijazah and sanad (if any)</label><input class="input" id="aIjazah" name="ijazah" value="${esc(a.ijazah || '')}" maxlength="400" placeholder="For example: Ijazah in Hafs ʿan ʿĀṣim from Sheikh … (Madinah)"></div>
@@ -171,14 +171,21 @@ export async function applyView(root) {
       box.querySelector('#recStart')?.addEventListener('click', startRec);
     }
   }
+  let starting = false;
   async function startRec() {
+    if (rec || starting) return; // a second tap while starting must not open a second microphone
     if (!surahSel.value) { toast('First choose the surah you will recite.'); surahSel.focus(); return; }
-    rec = new Recorder();
-    const ok = await rec.start(null, { bitrate: 64000 });
-    if (!ok) { rec = null; toast('The microphone could not start. Allow the microphone for rattilmai.com and try again.'); return; }
-    if (!alive(root)) { rec.stop(); return; }
+    starting = true;
+    const r = new Recorder();
+    const ok = await r.start(null, { bitrate: 64000 });
+    starting = false;
+    if (!ok) { toast('The microphone could not start. Allow the microphone for rattilmai.com and try again.'); return; }
+    if (!alive(root)) { r.stop(); return; }
+    rec = r;
     paintRec('recording');
+    clearInterval(tick);
     tick = setInterval(() => {
+      if (!rec) return;
       const t = Math.floor(rec.elapsed() / 1000);
       const el = box.querySelector('#recTime'); if (el) el.textContent = fmtTime(t * 1000);
       if (t >= MAX_SEC) stopRec();
@@ -186,9 +193,10 @@ export async function applyView(root) {
   }
   async function stopRec() {
     if (!rec) return;
+    const r = rec; rec = null; // a second tap on Stop does nothing
     clearInterval(tick);
-    const t = Math.floor(rec.elapsed() / 1000);
-    const b = await rec.stop(); rec = null;
+    const t = Math.floor(r.elapsed() / 1000);
+    const b = await r.stop();
     if (!b || t < minSec()) { toast(`That was too short. Recite the whole surah (at least ${minSec()} seconds).`); paintRec(); return; }
     if (url) URL.revokeObjectURL(url);
     blob = b; secs = t; url = URL.createObjectURL(b);
@@ -248,7 +256,7 @@ export async function findTeacherView(root) {
     return;
   }
   const r = req && req.status === 'waiting' ? req : null;
-  const r0 = r || { languages: [], teacher_gender: 'any', age_group: 'adult', level: '', note: '', student_name: s.profile?.name || '' };
+  const r0 = req ? { ...req, student_name: req.student_name || s.profile?.name || '' } : { languages: [], teacher_gender: 'any', age_group: 'adult', level: '', note: '', student_name: s.profile?.name || '' };
   root.innerHTML = `
     <div class="stack">
       <div class="page-head"><p class="eyebrow">Recite With Me academy</p><h1>Find me a teacher</h1>
@@ -287,7 +295,7 @@ export async function findTeacherView(root) {
     if (!main) { box.innerHTML = '<p class="small muted">Choose the main language to see verified teachers.</p>'; return; }
     const wanted = [main, ...checked(form, 'lang').filter((l) => l !== main)];
     const rank = (t) => (t.languages[0] === main ? 3 : t.languages.includes(main) ? 2 : 1);
-    const list = verified.filter((t) => t.accepting && t.languages.some((l) => wanted.includes(l)) && (g === 'any' || t.gender === g))
+    const list = verified.filter((t) => t.verified && t.hasRoom !== false && t.accepting && t.languages.some((l) => wanted.includes(l)) && (g === 'any' || t.gender === g))
       .sort((a, b) => rank(b) - rank(a) || b.years_experience - a.years_experience);
     if (!list.some((t) => t.user_id === pref)) pref = '';
     box.innerHTML = list.length ? `
@@ -306,11 +314,14 @@ export async function findTeacherView(root) {
     const main = readMain(form, 'main');
     if (!main) { toast('Choose the language the student speaks best.'); return; }
     const langs = [main, ...checked(form, 'lang').filter((l) => l !== main)].slice(0, 6);
+    const btn = form.querySelector('button[type=submit]');
+    if (btn.disabled) return;
+    btn.disabled = true;
     try {
       await cloud.requestTeacher({ preferred_teacher: pref || null, student_name: form.elements.sname.value, languages: langs, teacher_gender: form.querySelector('input[name="tg"]:checked')?.value || 'any', age_group: form.querySelector('input[name="age"]:checked')?.value || 'adult', level: form.elements.level.value, note: form.elements.note.value });
       toast('Request sent. We will match you soon.');
       findTeacherView(root);
-    } catch (err) { console.warn(err); toast('Could not send. Check your connection.'); }
+    } catch (err) { btn.disabled = false; console.warn(err); toast('Could not send. Check your connection.'); }
   });
   root.querySelector('#cancelReq')?.addEventListener('click', async () => {
     try { await cloud.cancelTeacherRequest(); toast('Request cancelled'); findTeacherView(root); } catch { toast('Could not cancel. Check your connection.'); }

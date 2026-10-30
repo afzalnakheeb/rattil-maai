@@ -52,9 +52,9 @@ async function fillAcademy(root) {
   const card = (border, icon, title, text, link) => `<a class="card row" href="#/apply" style="text-decoration:none;color:inherit;${border}">
     <div class="icon-tile ${icon}">${icons.users}</div><div class="grow"><h3>${title}</h3><div class="small muted">${text}</div></div>${link ? `<span class="btn sm">${link}</span>` : ''}</a>`;
   if (!app) box.innerHTML = card('border:1.5px solid var(--gold)', 'gold', 'Teach with the academy', 'Apply to become a verified teacher. Students who speak your languages are then assigned to you.', 'Apply');
-  else if (app.status === 'pending') box.innerHTML = card('', 'gold', 'Your application is under review', 'You can keep teaching your own students with your class code meanwhile.', '');
+  else if (app.status === 'pending') box.innerHTML = card('', 'gold', 'Your application is under review', teacherApproved() ? 'During the test phase you can already teach your own students with your class code.' : 'Teaching opens as soon as the academy approves you.', '');
   else if (app.status === 'approved') box.innerHTML = card('', 'solid', 'Verified academy teacher', prof ? `${prof.accepting ? 'Taking new students' : 'Not taking new students'} · up to ${prof.capacity} academy students` : 'Students are assigned to you by language.', '');
-  else box.innerHTML = card('', 'red', 'Application not approved', app.admin_note ? esc(app.admin_note) : 'See the note from the academy.', 'View');
+  else box.innerHTML = card('', 'red', 'Application not approved', app.admin_note ? esc(app.admin_note) : 'Contact the academy to ask why, or apply again later.', 'View');
 }
 
 // Until the academy approves a teacher, teaching tools stay closed.

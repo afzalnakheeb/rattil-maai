@@ -114,6 +114,11 @@ async function render() {
   paintChrome(route, true);
   const role = s.profile.role;
   // Teaching pages stay closed until the academy approves the teacher.
+  // Re-check with the server: the owner may have locked teaching since the last check.
+  if (role === 'teacher' && account.isCloud() && ['live', 'review'].includes(route)) {
+    try { await Promise.race([account.refreshApproval(), new Promise((r) => setTimeout(r, 4000))]); } catch { /* offline: use the last answer */ }
+    if (page !== pg) return;
+  }
   if (role === 'teacher' && account.isCloud() && !account.teacherApproved() && ['live', 'review'].includes(route)) {
     const { lockedNote } = await import('./views/teacher.js');
     pg.innerHTML = `<div class="stack">${lockedNote()}</div>`;

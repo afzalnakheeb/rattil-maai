@@ -63,7 +63,7 @@ const BASE = `http://127.0.0.1:${server.address().port}/`;
 
 
 // ---------- fake cloud (one shared database for every browser window) ----------
-const db = { profiles: [], links: [], state: {}, sessions: [], reviews: [], calls: [], files: {}, apps: [], teachers: [], requests: [] };
+const db = { profiles: [], links: [], state: {}, sessions: [], reviews: [], calls: [], files: {}, apps: [], teachers: [], requests: [], recipients: [], emails: [] };
 const admins = [{ email: 'admin@gmail.com', role: 'owner', active: true, added_by: '', added_at: new Date().toISOString() }];
 const adminRole = (uid) => { const e = (prof(uid)?.email || '').toLowerCase(); const a = admins.find((x) => x.email === e && x.active); return a ? a.role : null; };
 const ctxUser = new Map();
@@ -172,6 +172,24 @@ const api = {
   academySettings() { return { ...settings }; },
   setOpenTeaching(ctx, uid, [o]) { if (adminRole(uid) !== 'owner') return { __error: 'Only an owner can change this' }; settings.open_teaching = !!o; return true; },
   uploadRecitation(ctx, uid, [audio]) { const p = `${uid}/application-${Date.now()}.webm`; db.files[p] = audio; return p; },
+  listReportRecipients(ctx, uid) { return db.recipients.filter((r) => r.student_id === uid); },
+  addReportRecipient(ctx, uid, [r]) {
+    const email = String(r.email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { __error: 'Enter a valid email address' };
+    if (db.recipients.some((x) => x.student_id === uid && x.email === email)) return { __error: 'duplicate key value violates unique constraint' };
+    if (db.recipients.filter((x) => x.student_id === uid).length >= 3) return { __error: 'Up to 3 parent emails per student' };
+    const row = { id: uuid(), student_id: uid, email, name: r.name || '', weekly: true, monthly: true, tz: 'Asia/Dubai', confirmed_at: null, unsubscribed_at: null, created_at: iso() };
+    db.recipients.push(row); return { id: row.id };
+  },
+  updateReportRecipient(ctx, uid, [id, p]) { const r = db.recipients.find((x) => x.id === id && x.student_id === uid); if (r) { ['name', 'weekly', 'monthly'].forEach((k) => { if (k in p) r[k] = p[k]; }); if ('unsubscribed_at' in p) { if (r.unsubscribed_at && !p.unsubscribed_at) r.confirmed_at = null; r.unsubscribed_at = p.unsubscribed_at; } } return true; },
+  removeReportRecipient(ctx, uid, [id]) { db.recipients = db.recipients.filter((x) => !(x.id === id && x.student_id === uid)); return true; },
+  reportEmail(ctx, uid, [action, id]) {
+    const r = db.recipients.find((x) => x.id === id && x.student_id === uid);
+    if (!r) return { __error: 'not-found' };
+    if (!settings.emailOn) return { __error: 'email-not-configured' };
+    if (action === 'test' && !r.confirmed_at) return { __error: 'not-confirmed' };
+    db.emails.push({ action, to: r.email }); return { ok: true };
+  },
   myApplication(ctx, uid) { return db.apps.find((x) => x.user_id === uid) || null; },
   submitApplication(ctx, uid, [a]) {
     let x = db.apps.find((y) => y.user_id === uid);
@@ -190,10 +208,14 @@ const api = {
     if (decision === 'approved') {
       db.teachers = db.teachers.filter((t) => t.user_id !== a.user_id).concat({ user_id: a.user_id, name: a.name, country: a.country, gender: a.gender, languages: a.languages, years_experience: a.years_experience, ijazah: a.ijazah, qualifications: a.qualifications, teaches: a.teaches, bio: a.bio, availability: a.availability, capacity: cap, accepting: true, approved_at: iso() });
       prof(a.user_id).role = 'teacher';
-    } else db.teachers.filter((t) => t.user_id === a.user_id).forEach((t) => { t.accepting = false; t.capacity = 0; });
+    } else {
+      db.teachers.filter((t) => t.user_id === a.user_id).forEach((t) => { t.accepting = false; t.verified = false; });
+      db.requests.filter((r) => r.teacher_id === a.user_id && r.status === 'assigned').forEach((r) => { db.links = db.links.filter((l) => !(l.teacher_id === a.user_id && l.student_id === r.student_id)); Object.assign(r, { status: 'waiting', teacher_id: null }); });
+    }
     return true;
   },
-  listTeachers(ctx, uid) { return db.teachers.map((t) => ({ ...t, students: api.amIAdmin(ctx, uid) || t.user_id === uid ? db.links.filter((l) => l.teacher_id === t.user_id).length : 0 })); },
+  unassignTeacher(ctx, uid, [s, t]) { if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' }; db.links = db.links.filter((l) => !(l.teacher_id === t && l.student_id === s)); const r = db.requests.find((x) => x.student_id === s && x.teacher_id === t); if (r) Object.assign(r, { status: 'waiting', teacher_id: null }); return true; },
+  listTeachers(ctx, uid) { return db.teachers.map((t) => ({ ...t, verified: t.verified !== false, hasRoom: t.accepting && t.verified !== false && db.links.filter((l) => l.teacher_id === t.user_id).length < t.capacity, students: api.amIAdmin(ctx, uid) || t.user_id === uid ? db.links.filter((l) => l.teacher_id === t.user_id).length : 0 })); },
   teacherProfile(ctx, uid, [id]) { return db.teachers.find((t) => t.user_id === id) || null; },
   updateTeacher(ctx, uid, [id, cap, acc]) { if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' }; const t = db.teachers.find((x) => x.user_id === id); if (t) Object.assign(t, { capacity: cap, accepting: acc }); return true; },
   myTeacherRequest(ctx, uid) { return db.requests.find((r) => r.student_id === uid) || null; },
@@ -202,7 +224,9 @@ const api = {
   listRequests(ctx, uid) { if (!api.amIAdmin(ctx, uid)) return []; return db.requests.map((r) => ({ ...r, email: prof(r.student_id)?.email || '' })); },
   assignTeacher(ctx, uid, [s, t]) {
     if (!api.amIAdmin(ctx, uid)) return { __error: 'Admins only' };
-    if (!reallyApproved(t)) return { __error: 'Not an approved teacher' };
+    if (!reallyApproved(t) || db.teachers.find((x) => x.user_id === t)?.verified === false) return { __error: 'Not an approved teacher' };
+    const rq = db.requests.find((x) => x.student_id === s);
+    if (rq && rq.status === 'assigned' && rq.teacher_id !== t) return { __error: 'This student was already assigned to another teacher' };
     if (!teacherOf(t, s)) db.links.push({ teacher_id: t, student_id: s, created_at: iso() });
     const r = db.requests.find((x) => x.student_id === s); if (r) Object.assign(r, { status: 'assigned', teacher_id: t, assigned_at: iso() });
     return true;
@@ -500,6 +524,35 @@ try {
   await page.waitForTimeout(300);
   check('Previous period shows an empty report without errors', /did not record/.test(await page.textContent('#view')));
   check('No sideways scrolling on the report', await noOverflow(page));
+  // ---------- Parent report emails ----------
+  await page.waitForSelector('#parentEmails #addParent');
+  await page.fill('#peEmail', 'Parent@Example.com');
+  await page.fill('#peName', 'Mum');
+  await page.click('#addParent button[type=submit]');
+  await page.waitForSelector('#parentEmails .parent-row');
+  check('Student adds a parent email from the report page', db.recipients.length === 1 && db.recipients[0].email === 'parent@example.com' && /Waiting for confirmation/.test(await page.textContent('#parentEmails')));
+  check('Without the email service it explains that sending is being set up', db.emails.length === 0);
+  settings.emailOn = true;
+  await page.click('#parentEmails [data-act="confirm"]');
+  await page.waitForTimeout(500);
+  check('Resend confirmation sends the confirmation email', db.emails.some((e) => e.action === 'confirm' && e.to === 'parent@example.com'));
+  db.recipients[0].confirmed_at = iso();
+  await page.reload(); await page.waitForSelector('#parentEmails [data-act="test"]');
+  check('After the parent confirms, the address shows Active', /Active/.test(await page.textContent('#parentEmails')));
+  await page.click('#parentEmails [data-act="test"]');
+  await page.waitForTimeout(500);
+  check('Send a sample now emails the report', db.emails.some((e) => e.action === 'test'));
+  await page.click('#parentEmails label:has(input[data-k="monthly"])');
+  await page.waitForTimeout(400);
+  check('Weekly / monthly switches save', db.recipients[0].monthly === false);
+  await page.fill('#peEmail', 'parent@example.com'); await page.click('#addParent button[type=submit]');
+  await page.waitForSelector('text=This email is already added.');
+  check('The same email cannot be added twice', db.recipients.length === 1);
+  page.once('dialog', (d) => d.accept());
+  await page.click('#parentEmails [data-act="remove"]');
+  await page.waitForTimeout(500);
+  check('A parent email can be removed', db.recipients.length === 0);
+  settings.emailOn = false;
   await tp.goto(BASE + `#/report?student=${studentId}`);
   await tp.waitForSelector('.hero', { timeout: 8000 });
   check('Teacher sees the same report for the student', /Yusuf Ali/.test(await tp.textContent('#view')) && /Words to revise/.test(await tp.textContent('#view')));
@@ -709,6 +762,21 @@ try {
   await ap.goto(BASE + '#/');
   await ap.waitForSelector('text=Aisha', { timeout: 8000 }).catch(() => {});
   check('The teacher sees the assigned student on Home', /Aisha/.test(await ap.textContent('#view')));
+  // Declining an approved teacher: not verified any more, their academy students go back to waiting.
+  await adm.goto(BASE + '#/admin?tab=applications');
+  await adm.waitForSelector('[data-af="approved"]');
+  await adm.click('[data-af="approved"]');
+  await adm.waitForSelector('[data-app]:has-text("Maryam Khan") [data-review="declined"]');
+  await adm.click('[data-app]:has-text("Maryam Khan") [data-review="declined"]');
+  await adm.waitForSelector('text=Application declined');
+  const aishaReq = db.requests.find((r) => r.student_name === 'Aisha');
+  check('Declining a teacher puts their academy students back on the waiting list', aishaReq.status === 'waiting' && !db.links.some((l) => l.teacher_id === maryamId && l.student_id === aishaId));
+  await adm.click('[data-tab="teachers"]');
+  await adm.waitForSelector('.teacher-card:has-text("Maryam Khan")');
+  check('A declined teacher is shown as "Not verified"', /Not verified/.test(await adm.textContent('.teacher-card:has-text("Maryam Khan")')));
+  await adm.click('[data-tab="students"]');
+  await adm.waitForSelector('[data-req]');
+  check('A declined teacher is not suggested for students', !/Maryam Khan/.test(await adm.textContent('#pane')));
   // ---------- Admins: only listed Google accounts; only owners manage the list ----------
   await adm.goto(BASE + '#/admin?tab=admins');
   await adm.waitForSelector('#addAdmin');

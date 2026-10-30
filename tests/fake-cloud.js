@@ -94,6 +94,7 @@ export const requestTeacher = (r) => rpc('requestTeacher', r);
 export const cancelTeacherRequest = () => rpc('cancelTeacherRequest');
 export const listRequests = () => rpc('listRequests');
 export const assignTeacher = (s, t) => rpc('assignTeacher', s, t);
+export const unassignTeacher = (s, t) => rpc('unassignTeacher', s, t);
 export const myAdminRole = () => rpc('myAdminRole');
 export const listAdmins = () => rpc('listAdmins');
 export const setAdmin = (e, r, a) => rpc('setAdmin', e, r, a);
@@ -104,3 +105,8 @@ export async function uploadRecitation(blob) {
 }
 export const academySettings = () => rpc('academySettings');
 export const setOpenTeaching = (o) => rpc('setOpenTeaching', o);
+export const listReportRecipients = () => rpc('listReportRecipients');
+export const addReportRecipient = (r) => rpc('addReportRecipient', r);
+export const updateReportRecipient = (id, p) => rpc('updateReportRecipient', id, p);
+export const removeReportRecipient = (id) => rpc('removeReportRecipient', id);
+export const reportEmail = (a, id, k) => rpc('reportEmail', a, id, k);

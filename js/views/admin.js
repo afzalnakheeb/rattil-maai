@@ -18,7 +18,7 @@ const when = (t) => { const n = Date.parse(t); return Number.isFinite(n) ? fmtDa
 
 export default async function adminView(root, params) {
   root.innerHTML = loading('Opening the admin panel');
-  const myRole = await cloud.myAdminRole();
+  let myRole = await cloud.myAdminRole();
   if (!myRole) {
     if (!alive(root)) return;
     root.innerHTML = '<div class="empty card">This page is for academy admins.</div>';
@@ -26,10 +26,11 @@ export default async function adminView(root, params) {
   }
   let tab = TABS.some(([k]) => k === params.tab) ? params.tab : 'overview';
   let appFilter = 'pending';
-  let langFilter = '';
+  let langFilter = ''; let reqFilter = '';
   let data = { apps: [], teachers: [], requests: [], admins: [], settings: { open_teaching: false } };
 
   async function refresh() {
+    myRole = (await cloud.myAdminRole()) || myRole;
     const [apps, teachers, requests, admins, settings] = await Promise.all([cloud.listApplications(), cloud.listTeachers(), cloud.listRequests(), cloud.listAdmins().catch(() => []), cloud.academySettings().catch(() => ({ open_teaching: false }))]);
     data = { apps, teachers, requests, admins, settings };
   }
@@ -58,9 +59,9 @@ export default async function adminView(root, params) {
 
   // ---------- Overview ----------
   function overview() {
-    const approved = data.teachers.filter((t) => t.capacity > 0);
-    const seats = approved.reduce((n, t) => n + Math.max(0, t.capacity - t.students), 0);
-    const assigned = data.teachers.reduce((n, t) => n + t.students, 0);
+    const approved = data.teachers.filter((t) => t.verified);
+    const seats = approved.filter((t) => t.accepting).reduce((n, t) => n + Math.max(0, t.capacity - t.students), 0);
+    const assigned = approved.reduce((n, t) => n + t.students, 0);
     const waiting = data.requests.filter((r) => r.status === 'waiting');
     const byLang = LANGUAGES.map(([c, en]) => ({
       c, en,
@@ -127,7 +128,7 @@ export default async function adminView(root, params) {
           ${a.phone ? `<p class="small"><b>WhatsApp:</b> <a href="https://wa.me/${esc(a.phone.replace(/[^\d]/g, ''))}" target="_blank" rel="noopener">${esc(a.phone)}</a></p>` : ''}
           ${a.admin_note ? `<p class="xs muted">Note: ${esc(a.admin_note)}</p>` : ''}
           <div class="row-wrap admin-actions">
-            <div class="field" style="flex:0 1 150px"><label for="cap-${esc(a.id)}">Max students</label><input class="input" id="cap-${esc(a.id)}" type="number" min="1" max="200" value="10" inputmode="numeric"></div>
+            <div class="field" style="flex:0 1 150px"><label for="cap-${esc(a.id)}">Max students</label><input class="input" id="cap-${esc(a.id)}" type="number" min="1" max="200" value="${data.teachers.find((t) => t.user_id === a.user_id)?.capacity || 10}" inputmode="numeric"></div>
             <div class="field" style="flex:1 1 220px"><label for="note-${esc(a.id)}">Note to the teacher (optional)</label><input class="input" id="note-${esc(a.id)}" maxlength="600" value=""></div>
           </div>
           <div class="row-wrap">
@@ -156,12 +157,12 @@ export default async function adminView(root, params) {
 
   // ---------- Students waiting ----------
   function students() {
-    const waiting = data.requests.filter((r) => r.status === 'waiting' && (!langFilter || r.languages.includes(langFilter)));
+    const waiting = data.requests.filter((r) => r.status === 'waiting' && (!reqFilter || r.languages.includes(reqFilter)));
     const assigned = data.requests.filter((r) => r.status === 'assigned');
     const tName = (id) => data.teachers.find((t) => t.user_id === id)?.name || 'Teacher';
     return `
       <div class="row-wrap" style="margin-bottom:12px"><label class="sr-only" for="sLang">Filter by language</label>
-        <select class="input" id="sLang" style="max-width:240px"><option value="">All languages</option>${LANGUAGES.map(([c, en]) => `<option value="${c}" ${langFilter === c ? 'selected' : ''}>${esc(en)}</option>`).join('')}</select></div>
+        <select class="input" id="sLang" style="max-width:240px"><option value="">All languages</option>${LANGUAGES.map(([c, en]) => `<option value="${c}" ${reqFilter === c ? 'selected' : ''}>${esc(en)}</option>`).join('')}</select></div>
       ${waiting.length ? `<div class="stack-s">${waiting.map((r) => {
         const matches = matchTeachers(r, data.teachers).slice(0, 4);
         return `
@@ -179,7 +180,7 @@ export default async function adminView(root, params) {
             : `<p class="small text-red">No verified teacher speaks ${esc(r.languages.map(langName).join(' or '))}${r.teacher_gender !== 'any' ? ` (${r.teacher_gender})` : ''} yet.</p>`}
         </div>`;
       }).join('')}</div>` : '<div class="empty card">No students waiting for a teacher.</div>'}
-      ${assigned.length ? `<div class="card stack-s"><h2>Recently matched</h2>${assigned.slice(-12).reverse().map((r) => `<div class="list-item"><div class="grow"><h3 style="font-size:15px">${esc(r.student_name || 'Student')}</h3><div class="xs muted">with ${esc(tName(r.teacher_id))} · ${esc(when(r.assigned_at))}</div></div></div>`).join('')}</div>` : ''}`;
+      ${assigned.length ? `<div class="card stack-s"><h2>Recently matched</h2>${assigned.slice(-12).reverse().map((r) => `<div class="list-item"><div class="grow"><h3 style="font-size:15px">${esc(r.student_name || 'Student')}</h3><div class="xs muted">with ${esc(tName(r.teacher_id))} · ${esc(when(r.assigned_at))}</div></div><button class="btn ghost sm" type="button" data-unassign="${esc(r.student_id)}" data-teacher-id="${esc(r.teacher_id)}">Move to waiting</button></div>`).join('')}</div>` : ''}`;
   }
 
   // ---------- Admins (only owners can change this list) ----------
@@ -251,7 +252,7 @@ export default async function adminView(root, params) {
     }));
     root.querySelectorAll('[data-af]').forEach((b) => b.addEventListener('click', () => { appFilter = b.dataset.af; paint(); }));
     root.querySelector('#tLang')?.addEventListener('change', (e) => { langFilter = e.target.value; paint(); });
-    root.querySelector('#sLang')?.addEventListener('change', (e) => { langFilter = e.target.value; paint(); });
+    root.querySelector('#sLang')?.addEventListener('change', (e) => { reqFilter = e.target.value; paint(); });
     root.querySelector('#copyApply')?.addEventListener('click', async () => {
       const link = 'https://rattilmai.com/teach/';
       try { await navigator.clipboard.writeText(link); toast('Apply link copied'); } catch { toast(link); }
@@ -262,13 +263,15 @@ export default async function adminView(root, params) {
       const decision = b.dataset.review;
       const cap = Math.max(1, Math.min(200, Number(card.querySelector(`[id^="cap-"]`).value) || 10));
       const note = card.querySelector(`[id^="note-"]`).value;
-      b.disabled = true;
+      if (card.dataset.busy) return;
+      card.dataset.busy = '1';
+      card.querySelectorAll('[data-review]').forEach((x) => { x.disabled = true; });
       try {
         await cloud.reviewApplication(id, decision, note, cap);
         await refresh();
         toast(decision === 'approved' ? 'Approved. The teacher is now verified.' : decision === 'declined' ? 'Application declined' : 'Moved back to review');
         if (alive(root)) paint();
-      } catch (e) { b.disabled = false; toast(`Could not save: ${e?.message || 'check your connection'}`); }
+      } catch (e) { delete card.dataset.busy; card.querySelectorAll('[data-review]').forEach((x) => { x.disabled = false; }); toast(`Could not save: ${e?.message || 'check your connection'}`); }
     }));
     root.querySelectorAll('[data-save-teacher]').forEach((b) => b.addEventListener('click', async () => {
       const row = b.closest('[data-teacher]');
@@ -276,12 +279,20 @@ export default async function adminView(root, params) {
       const acc = row.querySelector('[data-acc]').checked;
       try { await cloud.updateTeacher(row.dataset.teacher, cap, acc); await refresh(); toast('Saved'); if (alive(root)) paint(); } catch (e) { toast(`Could not save: ${e?.message || 'check your connection'}`); }
     }));
+    root.querySelectorAll('[data-unassign]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Take this student off the teacher and put them back on the waiting list?')) return;
+      b.disabled = true;
+      try { await cloud.unassignTeacher(b.dataset.unassign, b.dataset.teacherId); await refresh(); toast('Back on the waiting list'); if (alive(root)) paint(); } catch (e) { b.disabled = false; toast(`Could not save: ${e?.message || 'check your connection'}`); }
+    }));
     root.querySelectorAll('[data-assign]').forEach((b) => b.addEventListener('click', async () => {
-      const sid = b.closest('[data-req]').dataset.req;
+      const card = b.closest('[data-req]');
+      const sid = card.dataset.req;
+      if (card.dataset.busy) return;
       const t = data.teachers.find((x) => x.user_id === b.dataset.assign);
       if (t && (t.students >= t.capacity || !t.accepting) && !confirm(`${t.name} is full or not taking students. Assign anyway?`)) return;
-      b.disabled = true;
-      try { await cloud.assignTeacher(sid, b.dataset.assign); await refresh(); toast(`Assigned to ${t?.name || 'the teacher'}`); if (alive(root)) paint(); } catch (e) { b.disabled = false; toast(`Could not assign: ${e?.message || 'check your connection'}`); }
+      card.dataset.busy = '1';
+      card.querySelectorAll('[data-assign]').forEach((x) => { x.disabled = true; });
+      try { await cloud.assignTeacher(sid, b.dataset.assign); await refresh(); toast(`Assigned to ${t?.name || 'the teacher'}`); if (alive(root)) paint(); } catch (e) { delete card.dataset.busy; card.querySelectorAll('[data-assign]').forEach((x) => { x.disabled = false; }); toast(`Could not assign: ${e?.message || 'check your connection'}`); await refresh().catch(() => {}); if (alive(root)) paint(); }
     }));
   }
 

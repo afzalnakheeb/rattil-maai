@@ -252,6 +252,7 @@ pages['privacy/index.html'] = page('/privacy/', 'en',
 <li><b>Your learning record:</b> your hifz plan, daily progress, adhkar counts, app settings, recitation recordings, the marks on each recording, grades and teacher comments.</li>
 <li><b>Class links:</b> which teacher a student has joined with a class code.</li>
 <li><b>Teacher applications:</b> if you apply to teach, the details you give (languages, experience, ijazah, bio, availability and an optional WhatsApp number). Approved teachers' profile cards are shown to signed-in users; the phone number is seen only by academy admins.</li>
+<li><b>Parent report emails:</b> if a student adds a parent's email, we store it and send a confirmation first. Only after the parent confirms do weekly and monthly progress reports go out, sent through our email provider (Resend). Every email has a link to stop them, and the student can remove the address at any time.</li>
 <li><b>Teacher requests:</b> if you ask for a teacher, the student's name, languages, age group and notes, seen by academy admins and the teacher you are matched with.</li>
 </ul>
 <h2>Who can see it</h2>
@@ -288,6 +289,16 @@ pages['terms/index.html'] = page('/terms/', 'en',
 <h2>Changes</h2>
 <p>We may improve or change the service and these terms. Continued use means you accept the updated terms.</p>
 </article>''', [crumbs('Terms', '/terms/')])
+
+# Landing pages for the links in parent report emails (not indexed).
+for slug, title, text in [
+    ('confirmed', 'Reports confirmed', 'Thank you. You will now receive the weekly report every Sunday morning and the monthly report on the 1st of each month. Every email has a link to stop them.'),
+    ('stopped', 'Emails stopped', 'You will not receive any more progress reports at this address. The student can add it again in the app at any time; it would need your confirmation again.'),
+    ('invalid', 'Link not valid', 'This link is not valid any more. Ask the student to send a new confirmation from Settings in Recite With Me.'),
+]:
+    pages[f'parents/{slug}/index.html'] = page(f'/parents/{slug}/', 'en', f'{title} — Recite With Me', text,
+        f'<article class="stack"><p class="eyebrow">Reports for parents</p><h1>{html.escape(title)}</h1><p class="lead">{html.escape(text)}</p><div class="cta"><a class="btn" href="/">Open Recite With Me</a></div></article>', [])
+    pages[f'parents/{slug}/index.html'] = pages[f'parents/{slug}/index.html'].replace('<meta name="robots" content="index, follow, max-image-preview:large">', '<meta name="robots" content="noindex">')
 
 for path, content in pages.items():
     os.makedirs(os.path.dirname(path), exist_ok=True)

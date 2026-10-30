@@ -12,6 +12,7 @@ import { SETS } from '../adhkar.js';
 import { esc, loading, errorBox, toast, band } from '../ui.js';
 import { icons } from '../icons.js';
 import { avatar } from './teacher.js';
+import { parentEmailsSlot, fillParentEmails } from './parents.js';
 
 const TYPE_LABEL = { wrong: 'Wrong word', skipped: 'Skipped word', extra: 'Extra word', teacher: 'Marked by teacher' };
 const fmtDay = (d, o = {}) => d.toLocaleDateString([], { day: 'numeric', month: 'short', ...o });
@@ -189,6 +190,7 @@ export default async function reportView(root, params) {
         <button class="btn" type="button" id="share">${icons.share} Share with parents</button>
         <button class="btn outline" type="button" id="print">Print or save as PDF</button>
       </div>
+      ${params.student ? '' : parentEmailsSlot()}
       <p class="xs muted" style="text-align:center">Recite With Me · rattilmai.com · generated ${esc(new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))}</p>
     </div>`;
 
@@ -196,6 +198,7 @@ export default async function reportView(root, params) {
   root.querySelector('#older').addEventListener('click', () => go({ o: String(offset + 1) }));
   root.querySelector('#newer').addEventListener('click', () => { if (offset > 0) go({ o: String(offset - 1) }); });
   root.querySelector('#print').addEventListener('click', () => window.print());
+  if (!params.student) fillParentEmails(root);
   root.querySelector('#share').addEventListener('click', async () => {
     const lines = [
       `Recite With Me · ${kind === 'month' ? 'Monthly' : 'Weekly'} report`,
