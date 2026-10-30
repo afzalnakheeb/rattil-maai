@@ -40,7 +40,8 @@ export const RECITERS = [
   { id: 'ar.abdulbasitmurattal', src: 'in', path: '192/ar.abdulbasitmurattal', name: 'Abdul Basit Abdul Samad', ar: 'عبد الباسط عبد الصمد', group: 'classic', note: 'Murattal' },
   { id: 'ar.abdulsamad', src: 'in', path: '64/ar.abdulsamad', name: 'Abdul Basit · Mujawwad', ar: 'عبد الباسط (مجود)', group: 'classic', note: 'Mujawwad' },
   { id: 'ar.husarymujawwad', src: 'in', path: '128/ar.husarymujawwad', name: 'al-Husary · Mujawwad', ar: 'الحصري (مجود)', group: 'classic', note: 'Mujawwad' },
-  { id: 'ar.minshawimujawwad', src: 'in', path: '64/ar.minshawimujawwad', name: 'al-Minshawi · Mujawwad', ar: 'المنشاوي (مجود)', group: 'classic', note: 'Mujawwad' },
+  // The Islamic Network 'minshawimujawwad' files are the murattal recording, so the mujawwad comes from EveryAyah.
+  { id: 'ea.minshawimujawwad', src: 'ea', path: 'Minshawy_Mujawwad_192kbps', name: 'al-Minshawi · Mujawwad', ar: 'المنشاوي (مجود)', group: 'classic', note: 'Mujawwad' },
   { id: 'ea.tablawi', src: 'ea', path: 'Mohammad_al_Tablaway_128kbps', name: 'Muhammad al-Tablawi', ar: 'محمد الطبلاوي', group: 'classic', note: 'Murattal' },
   { id: 'ea.banna', src: 'ea', path: 'mahmoud_ali_al_banna_32kbps', name: 'Mahmoud Ali al-Banna', ar: 'محمود علي البنا', group: 'classic', note: 'Murattal' },
   // Popular reciters
@@ -59,7 +60,7 @@ export const RECITERS = [
 ];
 
 // Saved settings from before: old ids that did not exist on the CDN map to the right reciter.
-const RECITER_ALIASES = { 'ar.sudais': 'ar.abdurrahmaansudais', 'ar.shuraim': 'ar.saoodshuraym', 'ar.abdulbasit': 'ar.abdulbasitmurattal', 'ar.ajamy': 'ar.ahmedajamy' };
+const RECITER_ALIASES = { 'ar.minshawimujawwad': 'ea.minshawimujawwad', 'ar.sudais': 'ar.abdurrahmaansudais', 'ar.shuraim': 'ar.saoodshuraym', 'ar.abdulbasit': 'ar.abdulbasitmurattal', 'ar.ajamy': 'ar.ahmedajamy' };
 
 export function reciter(id) {
   const real = RECITER_ALIASES[id] || id;
