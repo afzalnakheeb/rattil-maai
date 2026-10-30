@@ -44,3 +44,57 @@ document.getElementById('soX').href = `https://twitter.com/intent/tweet?text=${e
 document.getElementById('soFb').href = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
 document.getElementById('soLi').href = `https://www.linkedin.com/sharing/share-offsite/?url=${u}`;
 document.getElementById('soTg').href = `https://t.me/share/url?url=${u}&text=${encodeURIComponent(MSG.replace(LINK + '\n', ''))}`;
+
+// Downloads: each link gets a signed key (6 hours) so the phone's download manager, which does not send
+// the passcode cookie, still receives the file and saves it instead of playing it.
+const dls = [...document.querySelectorAll('a.dl')];
+fetch('/decks/token/', { credentials: 'same-origin', cache: 'no-store' })
+  .then((r) => (r.ok ? r.json() : null))
+  .then((j) => {
+    if (!j || !j.t) return;
+    dls.forEach((a) => { a.href = `${a.getAttribute('href').split('?')[0]}?t=${encodeURIComponent(j.t)}&dl=1`; });
+  })
+  .catch(() => {});
+
+// Save to Photos: on phones that can share files (iPhone in particular), hand the video to the share
+// sheet, which offers "Save Video". The 720p film (11 MB) is fetched first.
+const saveBtn = document.getElementById('savePhotos');
+const FILM = 'media/recite-with-me-film-720p.mp4';
+let canFiles = false;
+try { canFiles = !!(navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'])], 'x.mp4', { type: 'video/mp4' })] })); } catch { canFiles = false; }
+if (canFiles) {
+  saveBtn.hidden = false;
+  let file = null;
+  let busy = false;
+  const label = (t) => { saveBtn.textContent = t; };
+  async function load() {
+    const r = await fetch(FILM, { credentials: 'same-origin' });
+    if (!r.ok || !r.body) throw new Error('fetch');
+    const total = +r.headers.get('content-length') || 0;
+    const reader = r.body.getReader();
+    const parts = []; let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value); got += value.length;
+      if (total) label(`Preparing the film… ${Math.round((got / total) * 100)}%`);
+    }
+    return new File(parts, 'Recite-With-Me-film.mp4', { type: 'video/mp4' });
+  }
+  async function share() {
+    try { await navigator.share({ files: [file], title: 'Recite With Me film' }); label('Save the film to Photos'); }
+    catch (e) {
+      // The first tap's permission can run out while the file loads; the next tap opens the share sheet.
+      if (e && e.name === 'NotAllowedError') label('Ready: tap to save to Photos');
+      else label('Save the film to Photos');
+    }
+  }
+  saveBtn.addEventListener('click', async () => {
+    if (busy) return;
+    if (file) { share(); return; }
+    busy = true; saveBtn.setAttribute('aria-busy', 'true'); label('Preparing the film…');
+    try { file = await load(); await share(); }
+    catch { label('Could not prepare the film. Try again'); }
+    finally { busy = false; saveBtn.removeAttribute('aria-busy'); }
+  });
+}

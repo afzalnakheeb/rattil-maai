@@ -61,6 +61,16 @@
           "value": "private, no-store"
         }
       ]
+    },
+    {
+      "source": "/decks/media/(.*)",
+      "has": [{ "type": "query", "key": "dl" }],
+      "headers": [
+        {
+          "key": "Content-Disposition",
+          "value": "attachment"
+        }
+      ]
     }
   ]
 }

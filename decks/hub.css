@@ -41,3 +41,6 @@ video { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #000
 .dl b { font-size: 16px; }
 .dl span { color: var(--muted); font-size: 14px; }
 .dl:hover, .dl:focus-visible { border-color: var(--gold); outline: none; }
+button.btn { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+button.btn[aria-busy="true"] { opacity: .8; cursor: progress; }
+button.btn:focus-visible { outline: 3px solid var(--ivory); outline-offset: 2px; }

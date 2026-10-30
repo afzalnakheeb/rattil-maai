@@ -87,7 +87,21 @@ export default async function middleware(request) {
   if (path === '/decks/lock') {
     return new Response(null, { status: 303, headers: { Location: '/decks/', 'Cache-Control': 'no-store', 'Set-Cookie': `${COOKIE}=; Path=/decks; Max-Age=0; HttpOnly; Secure; SameSite=Lax` } });
   }
-  if (same(readCookie(request, COOKIE), session)) return; // unlocked: serve the file
+  const unlocked = same(readCookie(request, COOKIE), session);
+
+  // Download links carry their own signed key, valid for 6 hours. A phone's download manager fetches the
+  // file again outside the browser, without the cookie, so a cookie alone would hand it the "Locked" text.
+  if (path === '/decks/token') {
+    if (!unlocked) return new Response('Locked', { status: 401, headers: { 'Cache-Control': 'no-store' } });
+    const exp = Math.floor(Date.now() / 1000) + 6 * 3600;
+    const t = `${exp}.${await hmac(key, 'dl-v1:' + exp)}`;
+    return new Response(JSON.stringify({ t }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+  }
+  if (unlocked) return; // unlocked: serve the file
+  if (path.startsWith('/decks/media/')) {
+    const [exp, sig] = String(url.searchParams.get('t') || '').split('.');
+    if (/^\d{10}$/.test(exp || '') && +exp > Date.now() / 1000 && same(sig, await hmac(key, 'dl-v1:' + exp))) return;
+  }
   if (path === '/decks') return lockPage(false);
   return new Response('Locked', { status: 401, headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
 }
