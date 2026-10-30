@@ -36,3 +36,8 @@ video { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #000
 .sbtn.wa { background: #1FA855; border-color: #1FA855; color: #fff; }
 .sbtn:hover, .sbtn:focus-visible { border-color: var(--gold); outline: none; }
 .sbtn.wa:hover, .sbtn.wa:focus-visible { filter: brightness(1.08); }
+.dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.dl { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 16px 56px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D9B66A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v11M7 10l5 5 5-5M5 20h14'/%3E%3C/svg%3E") no-repeat 18px 18px / 24px 24px; color: var(--ivory); text-decoration: none; min-height: 44px; }
+.dl b { font-size: 16px; }
+.dl span { color: var(--muted); font-size: 14px; }
+.dl:hover, .dl:focus-visible { border-color: var(--gold); outline: none; }

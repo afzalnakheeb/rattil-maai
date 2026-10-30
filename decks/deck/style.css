@@ -275,3 +275,5 @@ p { margin: 0; }
 .em-chip.app { background: #F5ECD7; color: #7A5B1A; }
 .em-chip.teacher { background: #DDEFE5; color: #18563F; }
 .em-card { gap: 10px; }
+.ar-term { font-family: "IBM Plex Sans Arabic", var(--body); color: var(--gold2); font-weight: 500; margin-left: 10px; }
+.row-card p small { color: var(--faint); font-size: 19px; margin-left: 6px; }

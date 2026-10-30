@@ -1,5 +1,5 @@
 // Chapter buttons for the film (seconds into the video).
-const CH = [[0, 'Introduction'], [12, 'The challenge'], [24.7, 'One app, three people'], [31.8, 'The daily plan'], [48.8, 'Listen'], [63.9, 'Recite from memory'], [75.3, 'Honest progress'], [82.9, 'Verified teachers'], [99.8, 'Live online lessons'], [126, 'Reports for parents'], [148.4, 'Daily worship'], [159.4, 'Sources'], [178.5, 'Principles'], [193, 'Start today']];
+const CH = [[0, 'Introduction'], [12, 'The challenge'], [24.7, 'One app, three people'], [31.8, 'The daily plan'], [53.7, 'Listen'], [68.8, 'Recite from memory'], [80.2, 'Honest progress'], [87.8, 'Verified teachers'], [104.7, 'Live online lessons'], [130.9, 'Reports for parents'], [153.3, 'Daily worship'], [164.3, 'Sources'], [183.4, 'Principles'], [197.9, 'Start today']];
 const v = document.getElementById('film');
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const box = document.getElementById('chapters');
@@ -36,3 +36,11 @@ if (navigator.share) {
   more.hidden = false;
   more.addEventListener('click', () => navigator.share({ title: SUBJECT, text: MSG }).catch(() => {}));
 }
+
+// Social media: public posts carry the link only (no passcode); Telegram goes to chosen people, so it carries the message.
+const PUBLIC_TEXT = 'Recite With Me (رتّل معي): memorize the Quran with a daily plan, an AI that follows every word, and live online lessons with a verified teacher. The film and the deck:';
+const u = encodeURIComponent(LINK);
+document.getElementById('soX').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(PUBLIC_TEXT)}&url=${u}`;
+document.getElementById('soFb').href = `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+document.getElementById('soLi').href = `https://www.linkedin.com/sharing/share-offsite/?url=${u}`;
+document.getElementById('soTg').href = `https://t.me/share/url?url=${u}&text=${encodeURIComponent(MSG.replace(LINK + '\n', ''))}`;

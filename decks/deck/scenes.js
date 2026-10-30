@@ -85,11 +85,11 @@ export const SCENES = [
       <div class="col" style="gap:34px;max-width:900px">
         <div><div class="eyebrow" data-t="0.1">The daily plan</div><h1 class="big" data-t="0.3">A plan that <em>moves with you</em>.</h1></div>
         <div class="col" style="gap:18px">
-          <div class="card row-card" data-t="3.9" data-fx="left"><b class="dot" style="background:var(--mint)"></b><div><h3>Sabaq <span>· New lesson</span></h3><p>Today's new portion to memorize.</p></div></div>
-          <div class="card row-card" data-t="6.2" data-fx="left"><b class="dot" style="background:var(--ivory)"></b><div><h3>Sabqi <span>· Recent revision</span></h3><p>The pages you learned most recently.</p></div></div>
-          <div class="card row-card" data-t="8.5" data-fx="left"><b class="dot" style="background:var(--gold)"></b><div><h3>Manzil <span>· Older revision</span></h3><p>Rotating through everything memorized.</p></div></div>
+          <div class="card row-card" data-t="4.6" data-fx="left"><b class="dot" style="background:var(--mint)"></b><div><h3>New lesson <bdi class="ar-term" lang="ar">الحفظ الجديد</bdi></h3><p>Today's new portion to memorize. <small>Sabaq in South Asia</small></p></div></div>
+          <div class="card row-card" data-t="6.5" data-fx="left"><b class="dot" style="background:var(--ivory)"></b><div><h3>Recent revision <bdi class="ar-term" lang="ar">المراجعة القريبة</bdi></h3><p>The pages learned most recently. <small>Sabqi in South Asia</small></p></div></div>
+          <div class="card row-card" data-t="11.0" data-fx="left"><b class="dot" style="background:var(--gold)"></b><div><h3>Older revision <bdi class="ar-term" lang="ar">المراجعة البعيدة</bdi></h3><p>Rotating through everything memorized. <small>Manzil in South Asia</small></p></div></div>
         </div>
-        <div class="pills" data-t="10.0"><span class="pill">½ page a day</span><span class="pill on">1 page a day</span><span class="pill">2 pages a day</span><span class="pill ghost">From Juz ʿAmma or Al-Fatiha</span></div>
+        <div class="pills" data-t="14.9"><span class="pill">½ page a day</span><span class="pill on">1 page a day</span><span class="pill">2 pages a day</span><span class="pill ghost">From Juz ʿAmma or Al-Fatiha</span></div>
       </div>
       ${phone('today', 'data-t="0.8" data-fx="right"')}
     </div>` },
