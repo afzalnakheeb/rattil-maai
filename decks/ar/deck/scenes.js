@@ -89,7 +89,7 @@ export const SCENES = [
           <div class="card row-card" data-t="6.2" data-fx="left"><b class="dot" style="background:var(--ivory)"></b><div><h3>المراجعة القريبة</h3><p>ما حُفظ في الأيام الأخيرة.</p></div></div>
           <div class="card row-card" data-t="9.7" data-fx="left"><b class="dot" style="background:var(--gold)"></b><div><h3>المراجعة البعيدة</h3><p>مراجعةٌ دورية لكل ما سبق حفظه.</p></div></div>
         </div>
-        <div class="pills" data-t="15.8"><span class="pill">نصف صفحة يوميًا</span><span class="pill on">صفحة يوميًا</span><span class="pill">صفحتان يوميًا</span><span class="pill ghost">البداية من جزء عمّ أو من الفاتحة</span></div>
+        <div class="pills" data-t="16.3"><span class="pill">نصف صفحة يوميًا</span><span class="pill on">صفحة يوميًا</span><span class="pill">صفحتان يوميًا</span><span class="pill ghost">البداية من جزء عمّ أو من الفاتحة</span></div>
       </div>
       ${phone('today', 'data-t="0.8" data-fx="right"')}
     </div>` },
@@ -165,7 +165,7 @@ export const SCENES = [
         </div>
         <div class="card rubric" data-t="15.8">
           <h3>التقييم</h3>
-          ${[['الحفظ', 38, 40], ['التجويد', 26, 30], ['مخارج الحروف', 17, 20], ['الوقف', 9, 10]].map(([l, v, m], i) => `<div class="rb"><span>${l}</span><i><b data-t="${[17.0, 17.6, 18.4, 19.6][i]}" data-fx="grow" data-w="${(v / m) * 100}"></b></i><em>${AR(v)}/${AR(m)}</em></div>`).join('')}
+          ${[['الحفظ', 38, 40], ['التجويد', 26, 30], ['مخارج الحروف', 17, 20], ['الوقف', 9, 10]].map(([l, v, m], i) => `<div class="rb"><span>${l}</span><i><b data-t="${[16.8, 17.4, 18.2, 19.4][i]}" data-fx="grow" data-w="${(v / m) * 100}"></b></i><em>${AR(v)}/${AR(m)}</em></div>`).join('')}
           <div class="total" data-t="20.4"><span>المجموع</span><b><span data-fx="count" data-to="90" data-t="20.4" data-d="1.2">٠</span>/${AR(100)}</b></div>
           <div class="row" style="gap:14px" data-t="21.5"><span class="btn pass" id="passBtn">${IC.check} اجتياز · يُفتح الدرس التالي</span><span class="btn outline">إعادة</span></div>
         </div>
@@ -292,7 +292,7 @@ export const FX = {
     });
   },
   lesson(el, t) {
-    const A = 9.6, C = 12.5, T = 14.1;
+    const A = 10.0, C = 12.8, T = 14.0;
     const cwA = el.querySelector('#cwA'), cwT = el.querySelector('#cwT');
     cwA.classList.toggle('sug', t > A && t < C);
     cwA.classList.toggle('bad', t >= C);
