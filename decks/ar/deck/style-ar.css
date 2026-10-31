@@ -1,0 +1,43 @@
+/* Arabic (right-to-left) layer over style.css: Arabic type, no letter-spacing (it breaks joined letters), mirrored positions. */
+@font-face { font-family: "Plex Arabic"; src: url(fonts/plexar-400.ttf) format("truetype"); font-weight: 400; font-display: block; }
+@font-face { font-family: "Plex Arabic"; src: url(fonts/plexar5.ttf) format("truetype"); font-weight: 500; font-display: block; }
+@font-face { font-family: "Plex Arabic"; src: url(fonts/plexar-600.ttf) format("truetype"); font-weight: 600; font-display: block; }
+@font-face { font-family: "Plex Arabic"; src: url(fonts/plexar-700.ttf) format("truetype"); font-weight: 700; font-display: block; }
+:root { --body: "Plex Arabic", "IBM Plex Sans", system-ui, sans-serif; --display: "Alexandria", "Plex Arabic", system-ui, sans-serif; }
+html[dir="rtl"] * { letter-spacing: 0 !important; }
+html[dir="rtl"] .eyebrow { font-size: 24px; font-weight: 600; margin-bottom: 14px; }
+html[dir="rtl"] h1.big { font-size: 70px; line-height: 1.32; font-weight: 600; }
+html[dir="rtl"] h3 { font-size: 30px; line-height: 1.35; }
+html[dir="rtl"] .lead { font-size: 30px; line-height: 1.7; }
+html[dir="rtl"] .card p:not(.quran) { font-size: 23px; line-height: 1.75; }
+html[dir="rtl"] .need p:not(.quran) { font-size: 25px; }
+html[dir="rtl"] .pill { font-size: 22px; }
+html[dir="rtl"] .pill small { font-size: 18px; }
+html[dir="rtl"] .close-lines { font-size: 56px; line-height: 1.45; }
+html[dir="rtl"] .close-lines p { margin: 0; }
+html[dir="rtl"] .ayah-quote small { font-size: 22px; }
+html[dir="rtl"] .stat { letter-spacing: 0; }
+html[dir="rtl"] #caption { font-size: 34px; line-height: 1.6; font-family: "Plex Arabic", sans-serif; font-weight: 500; }
+.chrome .brand .ar { font-family: "Alexandria", sans-serif; font-weight: 600; font-size: 26px; color: var(--ivory); }
+.chrome .brand span[lang="en"] { font-family: "IBM Plex Sans", sans-serif; font-size: 17px; color: var(--gold); }
+.ar-brand { font-family: "Alexandria", sans-serif; font-weight: 700; font-size: 92px; line-height: 1.25; color: var(--ivory); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ar-brand small { margin-top: 38px; font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 24px; letter-spacing: .3em !important; text-transform: uppercase; color: var(--gold); }
+/* mirrored absolute positions */
+html[dir="rtl"] .vid.pip { right: auto; left: 36px; }
+html[dir="rtl"] .tag, html[dir="rtl"] .live { left: auto; right: 20px; }
+html[dir="rtl"] .vid-note { right: auto; left: 20px; }
+html[dir="rtl"] .rb { grid-template-columns: 190px 1fr 110px; }
+html[dir="rtl"] .rb em { text-align: left; }
+html[dir="rtl"] .rb i b { background: linear-gradient(270deg, var(--em), var(--mint)); }
+html[dir="rtl"] .rb i { display: flex; justify-content: flex-start; }
+html[dir="rtl"] .em-word b { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] .em-eyebrow { font-size: 16px; }
+html[dir="rtl"] .em-card p { font-size: 19px; line-height: 1.7; }
+html[dir="rtl"] .steps-line, html[dir="rtl"] .j-path { transform: scaleX(-1); }
+html[dir="rtl"] .j0 { left: 1355px; } html[dir="rtl"] .j1 { left: 881px; } html[dir="rtl"] .j2 { left: 408px; } html[dir="rtl"] .j3 { left: -65px; }
+html[dir="rtl"] .j4 { left: -65px; } html[dir="rtl"] .j5 { left: 408px; } html[dir="rtl"] .j6 { left: 881px; } html[dir="rtl"] .j7 { left: 1355px; }
+html[dir="rtl"] .j-node h3 { font-size: 26px; }
+html[dir="rtl"] .j-node b { font-family: "Alexandria", sans-serif; }
+html[dir="rtl"] .total b, html[dir="rtl"] .ring b, html[dir="rtl"] .stat, html[dir="rtl"] .counter b, html[dir="rtl"] .em-grid b { font-family: "Alexandria", sans-serif; }
+html[dir="rtl"] .btn { font-size: 22px; }
+html[dir="rtl"] #deckbar #replay { font-family: "Plex Arabic", sans-serif; }
