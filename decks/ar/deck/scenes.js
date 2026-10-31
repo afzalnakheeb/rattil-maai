@@ -45,14 +45,14 @@ export const SCENES = [
       <div class="cards3">
         <div class="card need" data-t="2.9"><i class="ic">${IC.cal}</i><h3>مداومة يومية</h3><p>قليلٌ كلَّ يوم، يُراجَع قبل أن يُنسى.</p></div>
         <div class="card need" data-t="5.4"><i class="ic">${IC.ear}</i><h3>معلّم يُصغي</h3><p>يسمع كل كلمة، فيصحّح ويوجّه.</p></div>
-        <div class="card need" data-t="7.7"><i class="ic">${IC.home}</i><h3>أسرة ترى التقدّم</h3><p>والدان يعرفان حقيقة الأسبوع.</p></div>
+        <div class="card need" data-t="7.7"><i class="ic">${IC.home}</i><h3>أسرة ترى التقدّم</h3><p>والدان مطّلعان على حصيلة الأسبوع.</p></div>
       </div>
       <p class="lead" data-t="10.4">وكثيرٌ من الطلاب يفتقد واحدًا منها على الأقل.</p>
     </div>` },
 
   { id: 'three', html: `
     <div class="pad col" style="gap:20px">
-      <div><div class="eyebrow" data-t="0.1">رتّل معي</div><h1 class="big" data-t="0.3">تطبيقٌ واحد مجاني. <em>لثلاثة أطراف.</em></h1></div>
+      <div><div class="eyebrow" data-t="0.1">رتّل معي</div><h1 class="big" data-t="0.3">تطبيقٌ مجانيّ واحد، <em>لأطرافٍ ثلاثة</em>.</h1></div>
       <div class="hub">
         <svg class="hub-lines" viewBox="0 0 1600 640"><path d="M800 330 L1270 150" data-t="4.8" data-fx="draw"/><path d="M800 330 L330 150" data-t="5.4" data-fx="draw"/><path d="M800 330 L800 560" data-t="6.4" data-fx="draw"/></svg>
         <div class="hub-core" data-t="0.6" data-fx="scale"><img src="img/icon-512.png" alt=""></div>
@@ -64,7 +64,7 @@ export const SCENES = [
 
   { id: 'journey', deckOnly: true, html: `
     <div class="pad col" style="gap:30px">
-      <div><div class="eyebrow" data-t="0.1">كيف يعمل</div><h1 class="big" data-t="0.3">من أول تسجيل <em>إلى تقريرٍ في البيت</em>.</h1></div>
+      <div><div class="eyebrow" data-t="0.1">كيف يعمل</div><h1 class="big" data-t="0.3">من أول دخول <em>إلى تقريرٍ في البيت</em>.</h1></div>
       <div class="journey">
         <svg class="j-path" viewBox="0 0 1620 560"><path d="M100 120 H1520 C1770 120 1770 400 1520 400 H100" data-t="0.9" data-fx="draw" data-d="5.5"/></svg>
         ${[
@@ -83,11 +83,11 @@ export const SCENES = [
   { id: 'plan', html: `
     <div class="split">
       <div class="col" style="gap:34px;max-width:900px">
-        <div><div class="eyebrow" data-t="0.1">الخطة اليومية</div><h1 class="big" data-t="0.3">خطةٌ <em>تمضي معك</em>.</h1></div>
+        <div><div class="eyebrow" data-t="0.1">الخطة اليومية</div><h1 class="big" data-t="0.3">خطةٌ <em>تتقدّم معك</em>.</h1></div>
         <div class="col" style="gap:18px">
-          <div class="card row-card" data-t="3.7" data-fx="left"><b class="dot" style="background:var(--mint)"></b><div><h3>الحفظ الجديد</h3><p>مقطع اليوم الجديد للحفظ.</p></div></div>
+          <div class="card row-card" data-t="3.7" data-fx="left"><b class="dot" style="background:var(--mint)"></b><div><h3>الحفظ الجديد</h3><p>ما تحفظه اليوم.</p></div></div>
           <div class="card row-card" data-t="6.2" data-fx="left"><b class="dot" style="background:var(--ivory)"></b><div><h3>المراجعة القريبة</h3><p>ما حُفظ في الأيام الأخيرة.</p></div></div>
-          <div class="card row-card" data-t="9.7" data-fx="left"><b class="dot" style="background:var(--gold)"></b><div><h3>المراجعة البعيدة</h3><p>دورةٌ على كل ما سبق حفظه.</p></div></div>
+          <div class="card row-card" data-t="9.7" data-fx="left"><b class="dot" style="background:var(--gold)"></b><div><h3>المراجعة البعيدة</h3><p>مراجعةٌ دورية لكل ما سبق حفظه.</p></div></div>
         </div>
         <div class="pills" data-t="15.8"><span class="pill">نصف صفحة يوميًا</span><span class="pill on">صفحة يوميًا</span><span class="pill">صفحتان يوميًا</span><span class="pill ghost">البداية من جزء عمّ أو من الفاتحة</span></div>
       </div>
@@ -100,7 +100,7 @@ export const SCENES = [
       <div class="col" style="gap:30px;max-width:900px">
         <div><div class="eyebrow" data-t="0.1">الاستماع أولًا</div><h1 class="big" data-t="0.3">مصحف المدينة، <em>آيةً آية</em>.</h1></div>
         <div class="card quran-line" data-t="1.9"><span class="quran" lang="ar" dir="rtl">${FATIHA2.map((w, i) => `<span class="hw" data-h="${i}">${w}</span>`).join(' ')} <span class="am2">۝${AR(2)}</span></span></div>
-        <div class="row" style="gap:26px;align-items:flex-end"><b class="stat" data-t="8.4" data-fx="count" data-to="34" data-d="1.0">٠</b><span class="lead" data-t="8.6" style="padding-bottom:16px">قارئًا من كبار القرّاء، منهم أئمة الحرمين الشريفين</span></div>
+        <div class="row" style="gap:26px;align-items:flex-end"><b class="stat" data-t="8.4" data-fx="count" data-to="34" data-d="1.0">٠</b><span class="lead" data-t="8.6" style="padding-bottom:16px">من كبار القرّاء، منهم أئمة الحرمين الشريفين</span></div>
         <div class="pills small" data-stagger="11.3">${['عبد الرحمن السديس', 'سعود الشريم', 'ماهر المعيقلي', 'ياسر الدوسري', 'محمود خليل الحصري', 'محمد صديق المنشاوي', 'عبد الباسط عبد الصمد', 'مشاري العفاسي'].map((n) => `<span class="pill">${n}</span>`).join('')}</div>
         <div class="loop" data-t="13.8"><span class="loop-ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27"/><circle class="arc" cx="32" cy="32" r="27"/></svg><b id="loopN">١</b></span><span class="lead">تكرّر المقطع خمس مرات، حتى يستقرّ في القلب.</span></div>
       </div>
@@ -130,7 +130,7 @@ export const SCENES = [
             <div class="pill on big-pill" data-t="3.2">التالي: المراجعة القريبة · نحو ${AR(5)} دقائق</div>
           </div>
         </div>
-        <div class="card wave-card" data-t="5.6"><span class="wave">${Array.from({ length: 48 }, (_, i) => `<i data-i="${i}"></i>`).join('')}</span><span>كل تلاوة محفوظة في سجلّك، مع ملاحظاتها.</span></div>
+        <div class="card wave-card" data-t="5.6"><span class="wave">${Array.from({ length: 48 }, (_, i) => `<i data-i="${i}"></i>`).join('')}</span><span>كل تلاوة تُسجَّل مع ملاحظاتها، لتعود إليها متى شئت.</span></div>
       </div>
     </div>` },
 
@@ -160,7 +160,7 @@ export const SCENES = [
           <p class="quran call-words" lang="ar" dir="rtl"><span>لَمْ</span> <span class="cw" id="cwT">يَلِدْ</span> <span class="cw" id="cwA">وَلَمْ</span> <span>يُولَدْ</span> <span class="am2">۝${AR(3)}</span></p>
           <div class="two-marks">
             <div class="mk app" id="mkApp"><b>رصدها التطبيق</b><span id="mkAppState">كلمة خاطئة · بانتظار المعلّم</span></div>
-            <div class="mk teacher" id="mkTeacher"><b>علّمها المعلّم</b><span>تصحيح المعلّم نفسه</span></div>
+            <div class="mk teacher" id="mkTeacher"><b>رصدها المعلّم</b><span>تصحيحٌ أضافه المعلّم</span></div>
           </div>
         </div>
         <div class="card rubric" data-t="15.8">
@@ -175,14 +175,14 @@ export const SCENES = [
   { id: 'parents', html: `
     <div class="split">
       <div class="col" style="gap:30px;max-width:760px">
-        <div><div class="eyebrow" data-t="0.1">للوالدين</div><h1 class="big" data-t="0.3">قريبون من التقدّم، <em>دون تسجيل دخول</em>.</h1></div>
+        <div><div class="eyebrow" data-t="0.1">للوالدين</div><h1 class="big" data-t="0.3">على اطّلاعٍ دائم، <em>دون تسجيل دخول</em>.</h1></div>
         <div class="col" style="gap:16px">
           <div class="card row-card" data-t="5.0" data-fx="left"><i class="ic sm">${IC.cal}</i><div><h3>كل يوم أحد</h3><p>التقرير الأسبوعي</p></div></div>
           <div class="card row-card" data-t="6.5" data-fx="left"><i class="ic sm">${IC.mail}</i><div><h3>أول كل شهر</h3><p>التقرير الشهري</p></div></div>
         </div>
         <div class="col" style="gap:10px">
           <div class="okline" data-t="21.3">${IC.check} لا يُرسَل شيء قبل موافقة أحد الوالدين</div>
-          <div class="okline" data-t="24.8">${IC.check} إيقافه بلمسة واحدة، في أي وقت</div>
+          <div class="okline" data-t="24.8">${IC.check} إيقاف التقارير بلمسة واحدة، في أي وقت</div>
         </div>
       </div>
       <div class="email" data-t="1.0" data-fx="right">
@@ -196,7 +196,7 @@ export const SCENES = [
             <div data-t="12.5" data-fx="scale"><b>${AR(1)}</b><span>صفحات جديدة</span></div>
             <div data-t="13.1" data-fx="scale"><b>${AR(92)}</b><span>تقييم المعلّم</span></div>
           </div>
-          <div class="em-mistakes" data-t="13.9"><b>الأخطاء:</b><span class="em-chip app">رصدها التطبيق · ${AR(3)}</span><span class="em-chip teacher">علّمها المعلّم · ${AR(2)}</span></div>
+          <div class="em-mistakes" data-t="13.9"><b>الأخطاء:</b><span class="em-chip app">رصدها التطبيق · ${AR(3)}</span><span class="em-chip teacher">رصدها المعلّم · ${AR(2)}</span></div>
           <div class="em-h" data-t="16.9">ملاحظات المعلّم</div>
           <div class="em-fb" data-t="17.1"><b>${AR(92)}/${AR(100)} · اجتياز</b> · الأستاذ أحمد<p>«ما شاء الله، أسبوعٌ موفّق. راجِع الآية الثالثة قبل الخميس.»</p></div>
           <div class="em-h" data-t="18.6">كلمات للمراجعة</div>
@@ -210,7 +210,7 @@ export const SCENES = [
       <div><div class="eyebrow" data-t="0.1">من حول الدرس</div><h1 class="big" data-t="0.3">يومٌ <em>موصولٌ بالله</em>.</h1></div>
       <div class="cards3">
         <div class="card wcard" data-t="3.3"><div class="counter"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52"/><circle class="arc" cx="60" cy="60" r="52"/></svg><b id="dhikrN">٠/٣</b></div><h3>الأذكار</h3><p>الصباح والمساء، وبعد الصلاة وقبل النوم، مع عدّاد.</p></div>
-        <div class="card wcard" data-t="5.9"><p class="quran dua" lang="ar" dir="rtl">بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ</p><h3>الأدعية والرقية</h3><p>مكتبة من «حصن المسلم»، مع مصدر كل دعاء.</p></div>
+        <div class="card wcard" data-t="5.9"><p class="quran dua" lang="ar" dir="rtl">بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ</p><h3>الأدعية والرقية</h3><p>مكتبة من «حصن المسلم»، مع مصدر كل دعاء.</p></div>
         <div class="card wcard" data-t="8.2"><div class="compass"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52"/><path d="M60 12v8M60 100v8M12 60h8M100 60h8"/><g id="needle"><path d="M60 22 67 60 60 66 53 60z" class="n1"/><path d="M60 98 53 60 60 54 67 60z" class="n2"/></g></svg></div><h3>مواقيت الصلاة والقبلة</h3><p>لمدينتك، وفق طرق حساب معتمدة.</p></div>
       </div>
     </div>` },
@@ -221,8 +221,8 @@ export const SCENES = [
       <div class="grid2">
         <div class="card src" data-t="3.2"><i class="ic">${IC.book}</i><div><h3>نص القرآن الكريم</h3><p>مصحف المدينة النبوية بالرسم العثماني، برواية حفص عن عاصم.</p></div></div>
         <div class="card src" data-t="8.1"><i class="ic">${IC.star}</i><div><h3>الأذكار والأدعية</h3><p>من «حصن المسلم»، مع تخريج كل حديث: البخاري ومسلم وأبو داود والترمذي.</p></div></div>
-        <div class="card src" data-t="16.1"><i class="ic">${IC.shield}</i><div><h3>الأدعية القرآنية</h3><p>مأخوذة من نص المصحف نفسه مع تلاوتها، ولا تُعاد كتابتها.</p></div></div>
-        <div class="card src" data-t="18.6"><i class="ic">${IC.ear}</i><div><h3>التلاوات ومواقيت الصلاة</h3><p>${AR(34)} قارئًا من كبار القرّاء. والمواقيت وفق أم القرى، ورابطة العالم الإسلامي، والهيئة المصرية، و<bdi>ISNA</bdi>، وغيرها.</p></div></div>
+        <div class="card src" data-t="16.1"><i class="ic">${IC.shield}</i><div><h3>الأدعية القرآنية</h3><p>مأخوذة من نص المصحف نفسه مع تلاوتها، دون أي نسخٍ يدوي.</p></div></div>
+        <div class="card src" data-t="18.6"><i class="ic">${IC.ear}</i><div><h3>التلاوات ومواقيت الصلاة</h3><p>${AR(34)} من كبار القرّاء. والمواقيت وفق تقويم أم القرى، ورابطة العالم الإسلامي، والهيئة المصرية العامة للمساحة، والجمعية الإسلامية لأمريكا الشمالية، وغيرها.</p></div></div>
       </div>
     </div>` },
 
@@ -231,7 +231,7 @@ export const SCENES = [
       <div><div class="eyebrow" data-t="0.1">المبادئ</div><h1 class="big" data-t="0.3">مبادئ <em>واضحة</em>.</h1></div>
       <div class="grid2">
         <div class="card src" data-t="1.8"><i class="ic">${IC.scale}</i><div><h3>الكلمة الأخيرة للمعلّم</h3><p>التقنية تتحقق من الكلمات، والمعلّم يحكم في التجويد، ويؤكّد كل خطأ، ويقرّر الاجتياز أو الإعادة.</p></div></div>
-        <div class="card src" data-t="9.5"><i class="ic">${IC.lock}</i><div><h3>الخصوصية أولًا</h3><p>التسجيلات لا يراها إلا الطالب ومعلّمه، ولا تصل التقارير إلى الوالدين إلا بعد موافقتهم.</p></div></div>
+        <div class="card src" data-t="9.5"><i class="ic">${IC.lock}</i><div><h3>الخصوصية أولًا</h3><p>التسجيلات لا يراها إلا الطالب ومعلّمه، ولا تصل التقارير إلى الوالدين إلا بعد موافقة أحدهما.</p></div></div>
         <div class="card src" data-t="11.1"><i class="ic">${IC.people}</i><div><h3>الأسرة تختار</h3><p>معلّمًا أو معلّمة، بلغة البيت.</p></div></div>
         <div class="card src" data-t="12.9"><i class="ic">${IC.gift}</i><div><h3>مجاني، بلا إعلانات</h3><p>لا شيء يَشغَل عن القرآن.</p></div></div>
       </div>

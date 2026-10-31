@@ -15,8 +15,8 @@ ${link}
 افتح الرابط وأدخل الرمز، فيظهر لك الفيلم والعرض. نرجو عدم نشر الرمز علنًا.`,
   subject: 'رتّل معي: الفيلم التعريفي والعرض التقديمي',
   copy: 'نسخ الرسالة', copied: 'تم النسخ', copyPrompt: 'انسخ هذه الرسالة:',
-  publicText: '«رتّل معي»: احفظ القرآن الكريم بخطة يومية، وتطبيق يتابع كل كلمة، ودروس مباشرة مع معلّم موثَّق. الفيلم والعرض:',
-  film: '../media/recite-with-me-film-ar-720p.mp4', filmName: 'Ratil-Maai-film-ar.mp4', filmTitle: 'فيلم رتّل معي',
+  publicText: '«رتّل معي»: احفظ القرآن الكريم بخطة يومية، وتسميعٍ يتابع فيه التطبيق كل كلمة، ودروس مباشرة مع معلّم موثَّق. الفيلم والعرض:',
+  film: '../media/recite-with-me-film-ar-720p.mp4', filmName: 'Rattil-Maai-film-ar.mp4', filmTitle: 'فيلم رتّل معي',
   save: 'حفظ الفيلم في الصور', preparing: 'جارٍ تجهيز الفيلم…', ready: 'جاهز: اضغط للحفظ في الصور', failed: 'تعذّر تجهيز الفيلم، حاول مرة أخرى',
 } : {
   link: 'https://rattilmai.com/decks/',
@@ -104,7 +104,7 @@ if (canFiles) {
       const { done, value } = await reader.read();
       if (done) break;
       parts.push(value); got += value.length;
-      if (total) label(`${L.preparing} ${num(Math.round((got / total) * 100))}%`);
+      if (total) label(`${L.preparing} ${num(Math.round((got / total) * 100))}${AR ? '٪' : '%'}`);
     }
     return new File(parts, L.filmName, { type: 'video/mp4' });
   }
