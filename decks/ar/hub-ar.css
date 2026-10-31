@@ -1,0 +1,21 @@
+/* Arabic hub: right-to-left layer over ../hub.css. No letter-spacing on Arabic (it breaks joined letters). */
+@font-face { font-family: "Plex Arabic"; src: url(deck/fonts/plexar-400.ttf) format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Plex Arabic"; src: url(deck/fonts/plexar5.ttf) format("truetype"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Plex Arabic"; src: url(deck/fonts/plexar-600.ttf) format("truetype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Plex Arabic"; src: url(deck/fonts/plexar-700.ttf) format("truetype"); font-weight: 700; font-display: swap; }
+body { font-family: "Plex Arabic", "IBM Plex Sans", system-ui, sans-serif; line-height: 1.75; }
+h1 { letter-spacing: 0; line-height: 1.35; }
+.label { letter-spacing: 0; font-size: 14px; }
+.lead { font-size: 18px; }
+.hint, .note { font-size: 15px; }
+.brand b { display: inline-flex; align-items: baseline; gap: 10px; }
+.brand .ar-name { color: var(--ivory); font-family: "Alexandria", sans-serif; font-size: 21px; }
+.brand span[lang="en"] { font-family: "IBM Plex Sans", sans-serif; font-size: 14px; color: var(--gold); }
+.top-links { display: flex; gap: 8px; }
+.lock[lang="en"] { font-family: "IBM Plex Sans", sans-serif; }
+.chapter { text-align: right; }
+.chapter b { font-family: "Alexandria", sans-serif; }
+.dl { padding: 16px 56px 16px 18px; background-position: right 18px top 18px; }
+.sbtn { font-size: 16px; }
+.brand b { white-space: nowrap; }
+@media (max-width: 520px) { .brand span[lang="en"] { display: none; } .top-links .lock { padding: 8px 14px; } }

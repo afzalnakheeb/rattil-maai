@@ -210,7 +210,7 @@ export const SCENES = [
       <div><div class="eyebrow" data-t="0.1">Around the lesson</div><h1 class="big" data-t="0.3">A day <em>connected to Allah</em>.</h1></div>
       <div class="cards3">
         <div class="card wcard" data-t="3.4"><div class="counter"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52"/><circle class="arc" cx="60" cy="60" r="52"/></svg><b id="dhikrN">0/3</b></div><h3>Adhkar</h3><p>Morning, evening, after salah and before sleep, with a tap counter.</p></div>
-        <div class="card wcard" data-t="6.0"><p class="quran dua" lang="ar" dir="rtl">بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ</p><h3>Duas and Ruqyah</h3><p>A Hisn al-Muslim library, each with its source.</p></div>
+        <div class="card wcard" data-t="6.0"><p class="quran dua" lang="ar" dir="rtl">بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ، وَهُوَ السَّمِيعُ الْعَلِيمُ</p><h3>Duas and Ruqyah</h3><p>A Hisn al-Muslim library, each with its source.</p></div>
         <div class="card wcard" data-t="7.4"><div class="compass"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52"/><path d="M60 12v8M60 100v8M12 60h8M100 60h8"/><g id="needle"><path d="M60 22 67 60 60 66 53 60z" class="n1"/><path d="M60 98 53 60 60 54 67 60z" class="n2"/></g></svg></div><h3>Prayer times and Qibla</h3><p>For your city, by recognised calculation methods.</p></div>
       </div>
     </div>` },
